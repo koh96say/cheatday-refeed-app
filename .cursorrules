@@ -1,0 +1,77 @@
+---
+alwaysApply: true
+# YOLOモードでも適用されるコマンドポリシー
+autoApproveCommands:
+  # Git操作（安全なコマンドのみ）
+  - "^git status$"
+  - "^git diff"
+  - "^git log"
+  - "^git add"
+  - "^git commit"
+  - "^git push$"  # force pushは除外（別途ブロック）
+  - "^git pull$"
+  # npm開発コマンド
+  - "^npm run dev"
+  - "^npm run dev:\\d+$"  # dev:3000, dev:3001 など
+  - "^npm run build$"
+  - "^npm start$"
+  - "^npm test$"
+  - "^npm run test:ui$"
+  - "^npm run lint$"
+  # ファイル読み取り操作
+  - "^read_file"
+  - "^list_dir"
+  - "^grep"
+
+# ブロックするコマンド（実行不可）
+blockCommands:
+  - "^rm -rf"
+  - "^sudo"
+  - "^chmod 777"
+  - "^git push --force"
+  - "^git push -f"
+  - "^npm publish"
+  - "^format"
+  - "^npm format"
+
+# 確認が必要なコマンド（通常モードでは確認、YOLOモードでは実行される）
+requireConfirmation:
+  - "^delete_file"
+  - "^rm "
+  - "^\\.env"
+  - "package\\.json"
+  - "\\.gitignore"
+---
+
+# 開発ルールとコマンドポリシー
+
+## コマンド実行ポリシー
+
+### ✅ 許可されたコマンド（自動承認）
+- **Git操作**: status, diff, log, add, commit, push (force push除く)
+- **開発サーバー**: npm run dev, npm run dev:3000, npm run dev:3001 など
+- **ビルド**: npm run build, npm start
+- **テスト**: npm test, npm run test:ui
+- **リンター**: npm run lint
+- **ファイル操作**: read_file, list_dir, grep（読み取りのみ）
+
+### ❌ 禁止されたコマンド（ブロック）
+- `rm -rf` (再帰的削除)
+- `sudo` (管理者権限)
+- `chmod 777` (権限変更)
+- `git push --force` (強制プッシュ)
+- `npm publish` (パッケージ公開)
+- `format` (全ファイルフォーマット)
+
+### ⚠️ 確認が必要な操作
+- ファイル削除
+- データベース操作
+- 環境変数の変更
+- .gitignore の変更
+- package.json の依存関係変更
+
+## セキュリティポリシー
+- 機密情報（API キー、トークン）のハードコード禁止
+- .env ファイルの変更は慎重に
+- git 履歴から機密情報を削除する際は確認
+
