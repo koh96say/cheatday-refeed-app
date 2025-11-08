@@ -56,6 +56,8 @@ export interface Database {
           sleep_min: number | null
           fatigue_1_5: number | null
           training_load: number | null
+          calorie_intake_kcal: number | null
+          energy_expenditure_kcal: number | null
           notes: string | null
         }
         Insert: {
@@ -69,6 +71,8 @@ export interface Database {
           sleep_min?: number | null
           fatigue_1_5?: number | null
           training_load?: number | null
+          calorie_intake_kcal?: number | null
+          energy_expenditure_kcal?: number | null
           notes?: string | null
         }
         Update: {
@@ -82,6 +86,8 @@ export interface Database {
           sleep_min?: number | null
           fatigue_1_5?: number | null
           training_load?: number | null
+          calorie_intake_kcal?: number | null
+          energy_expenditure_kcal?: number | null
           notes?: string | null
         }
       }
