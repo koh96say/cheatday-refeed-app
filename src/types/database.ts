@@ -121,6 +121,9 @@ export interface Database {
           plateau_flag: boolean | null
           mas: number | null
           rrs: number | null
+          rrs_v2: number | null
+          refeed_cooldown: number | null
+          refeed_response: number | null
         }
         Insert: {
           user_id: string
@@ -128,6 +131,9 @@ export interface Database {
           plateau_flag?: boolean | null
           mas?: number | null
           rrs?: number | null
+          rrs_v2?: number | null
+          refeed_cooldown?: number | null
+          refeed_response?: number | null
         }
         Update: {
           user_id?: string
@@ -135,6 +141,9 @@ export interface Database {
           plateau_flag?: boolean | null
           mas?: number | null
           rrs?: number | null
+          rrs_v2?: number | null
+          refeed_cooldown?: number | null
+          refeed_response?: number | null
         }
       }
       recommendations: {
@@ -149,6 +158,8 @@ export interface Database {
           duration_days: number
           rationale_json: Json | null
           executed: boolean
+          executed_at: string | null
+          refeed_effect_window: number | null
         }
         Insert: {
           id?: number
@@ -161,6 +172,8 @@ export interface Database {
           duration_days?: number
           rationale_json?: Json | null
           executed?: boolean
+          executed_at?: string | null
+          refeed_effect_window?: number | null
         }
         Update: {
           id?: number
@@ -173,6 +186,37 @@ export interface Database {
           duration_days?: number
           rationale_json?: Json | null
           executed?: boolean
+          executed_at?: string | null
+          refeed_effect_window?: number | null
+        }
+      }
+      refeed_sessions: {
+        Row: {
+          id: number
+          user_id: string
+          started_at: string
+          executed_at: string
+          effect_window: number | null
+          response: number | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: number
+          user_id: string
+          started_at: string
+          executed_at: string
+          effect_window?: number | null
+          response?: number | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: number
+          user_id?: string
+          started_at?: string
+          executed_at?: string
+          effect_window?: number | null
+          response?: number | null
+          created_at?: string | null
         }
       }
     }
