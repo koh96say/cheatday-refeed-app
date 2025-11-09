@@ -36,6 +36,14 @@ const THRESHOLDS = {
 };
 const LOCK_PENALTY = 2.5;
 
+const METRIC_CONFIG = {
+  temp_c: { weight: 0.35, polarity: -1, sdFloor: 0.1 },
+  rhr_bpm: { weight: 0.25, polarity: 1, sdFloor: 2 },
+  hrv_ms: { weight: 0.15, polarity: -1, sdFloor: 10 },
+  sleep_min: { weight: 0.15, polarity: -1, sdFloor: 30 },
+  fatigue_1_5: { weight: 0.1, polarity: 1, sdFloor: 0.5 },
+};
+
 function loadEnv() {
   const candidates = ['.env.local', '.env'];
   for (const filename of candidates) {
@@ -58,6 +66,10 @@ function loadEnv() {
 
 function sigmoid(x) {
   return 1 / (1 + Math.exp(-SIGMOID_K * (x - SIGMOID_X0)));
+}
+
+function clamp(value, min, max) {
+  return Math.max(min, Math.min(max, value));
 }
 
 function computeBaseline(values) {
@@ -83,6 +95,49 @@ function calculateZ(value, stats) {
   if (value === null || value === undefined || !stats) return 0;
   const sd = stats.sd || 1;
   return (value - stats.mean) / sd;
+}
+
+function median(values) {
+  if (values.length === 0) {
+    return 0;
+  }
+  const sorted = values.slice().sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+  return sorted[mid];
+}
+
+function mad(values, med) {
+  if (values.length === 0) {
+    return 0;
+  }
+  const deviations = values.map((value) => Math.abs(value - med));
+  return median(deviations);
+}
+
+function computeRobustZ(orderedMetrics, key, config) {
+  const allValues = orderedMetrics
+    .map((metric) => metric[key])
+    .filter((value) => value !== null && value !== undefined);
+  if (!allValues.length) {
+    return { z: 0, hasValue: false };
+  }
+  const windowValues = allValues.slice(-28);
+  const med = median(windowValues);
+  const madValue = mad(windowValues, med);
+  const scale = Math.max(1.4826 * madValue, config.sdFloor);
+
+  const latest = orderedMetrics.length ? orderedMetrics[orderedMetrics.length - 1]?.[key] : null;
+  if (latest === null || latest === undefined) {
+    return { z: 0, hasValue: false };
+  }
+
+  const rawZ = (latest - med) / (scale || config.sdFloor);
+  const z = clamp(rawZ, -2.5, 2.5);
+
+  return { z, hasValue: true };
 }
 
 function sortedMetrics(metrics) {
@@ -163,26 +218,34 @@ function calculateScores(metrics) {
   const orderedMetrics = sortedMetrics(metrics);
   const metricKeys = ['temp_c', 'rhr_bpm', 'hrv_ms', 'sleep_min', 'fatigue_1_5'];
   const zScores = {};
+  const effectiveWeights = {};
+  let activeWeightSum = 0;
+
   for (const key of metricKeys) {
-    const values = orderedMetrics
-      .map((metric) => metric[key])
-      .filter((value) => value !== null && value !== undefined);
-    if (values.length === 0) {
-      zScores[key] = 0;
-      continue;
+    const config = METRIC_CONFIG[key];
+    const { z, hasValue } = computeRobustZ(orderedMetrics, key, config);
+    zScores[key] = hasValue ? z : 0;
+    if (hasValue) {
+      effectiveWeights[key] = config.weight;
+      activeWeightSum += config.weight;
+    } else {
+      effectiveWeights[key] = 0;
     }
-    const trimmed = removeOutliers(values).slice(-28);
-    const baseline = computeBaseline(trimmed) ?? computeBaseline(values);
-    const latest = orderedMetrics[orderedMetrics.length - 1]?.[key] ?? null;
-    const zScore = calculateZ(latest, baseline);
-    zScores[key] = Number.isFinite(zScore) ? zScore : 0;
   }
-  const mas =
-    0.35 * (-(zScores.temp_c ?? 0)) +
-    0.25 * (zScores.rhr_bpm ?? 0) +
-    0.15 * (-(zScores.hrv_ms ?? 0)) +
-    0.15 * (-(zScores.sleep_min ?? 0)) +
-    0.1 * (zScores.fatigue_1_5 ?? 0);
+
+  let mas = 0;
+  if (activeWeightSum > 0) {
+    for (const key of metricKeys) {
+      const config = METRIC_CONFIG[key];
+      const normalizedWeight =
+        activeWeightSum > 0 && effectiveWeights[key] ? effectiveWeights[key] / activeWeightSum : 0;
+      const polarity = config.polarity;
+      const z = zScores[key] ?? 0;
+      mas += normalizedWeight * polarity * z;
+    }
+  }
+  mas = clamp(mas, -3, 3);
+
   const plateauFlag = calculatePlateauFlag(orderedMetrics);
   const deficitStreak = computeDeficitStreak(orderedMetrics);
   const trainingLoadFactor = computeTrainingLoadFactor(orderedMetrics);
@@ -414,6 +477,7 @@ async function main() {
     }
     const list = metricsByUser.get(row.user_id);
     list.push({
+      auth_uid: row.auth_uid ?? row.user_id,
       date: row.date,
       weight_kg: toNumberOrNull(row.weight_kg),
       rhr_bpm: toNumberOrNull(row.rhr_bpm),
@@ -443,6 +507,7 @@ async function main() {
 
   console.log('スコアを再計算しています...');
   const upserts = [];
+  const datasetRows = [];
   for (const [userId, metricList] of metricsByUser.entries()) {
     metricList.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
     const accumulator = [];
@@ -481,6 +546,33 @@ async function main() {
           ? Number(rrsResult.response.toFixed(6))
           : null,
       });
+
+      datasetRows.push({
+        auth_uid: metric.auth_uid ?? userId,
+        user_id: userId,
+        date: metric.date,
+        weight_kg: metric.weight_kg,
+        rhr_bpm: metric.rhr_bpm,
+        temp_c: metric.temp_c,
+        hrv_ms: metric.hrv_ms,
+        sleep_min: metric.sleep_min,
+        fatigue_1_5: metric.fatigue_1_5,
+        training_load: metric.training_load,
+        calorie_intake_kcal: metric.calorie_intake_kcal,
+        energy_expenditure_kcal: metric.energy_expenditure_kcal,
+        mas,
+        rrs_v1: rrs,
+        rrs_v2: rrsResult.rrs,
+        rrs_display: rrsResult.displayRrs,
+        rrs_effective: rrsResult.effectiveRrs,
+        refeed_cooldown: rrsResult.cooldown,
+        refeed_response: rrsResult.response,
+        deficit_streak: deficitStreak,
+        training_load_factor: trainingLoadFactor,
+        plateau_flag: plateauFlag ? 1 : 0,
+        hard_locked: rrsResult.hardLocked ? 1 : 0,
+        observed_days: rrsResult.observedDays,
+      });
     }
   }
 
@@ -495,6 +587,75 @@ async function main() {
     }
     console.log(`  -> ${i + chunk.length}/${upserts.length} 件 更新`);
   }
+
+  datasetRows.sort((a, b) => {
+    if (a.user_id === b.user_id) {
+      return a.date < b.date ? -1 : a.date > b.date ? 1 : 0;
+    }
+    return a.user_id < b.user_id ? -1 : 1;
+  });
+
+  const outputPath = path.resolve(process.cwd(), 'data/rrs_v2_metrics_with_scores.csv');
+  const header = [
+    'auth_uid',
+    'user_id',
+    'date',
+    'weight_kg',
+    'rhr_bpm',
+    'temp_c',
+    'hrv_ms',
+    'sleep_min',
+    'fatigue_1_5',
+    'training_load',
+    'calorie_intake_kcal',
+    'energy_expenditure_kcal',
+    'mas',
+    'rrs_v1',
+    'rrs_v2',
+    'rrs_display',
+    'rrs_effective',
+    'refeed_cooldown',
+    'refeed_response',
+    'deficit_streak',
+    'training_load_factor',
+    'plateau_flag',
+    'hard_locked',
+    'observed_days',
+  ];
+  const lines = [header.join(',')];
+  for (const row of datasetRows) {
+    lines.push(
+      [
+        row.auth_uid ?? '',
+        row.user_id,
+        row.date,
+        row.weight_kg !== null && row.weight_kg !== undefined ? row.weight_kg.toFixed(2) : '',
+        row.rhr_bpm !== null && row.rhr_bpm !== undefined ? row.rhr_bpm.toFixed(2) : '',
+        row.temp_c !== null && row.temp_c !== undefined ? row.temp_c.toFixed(2) : '',
+        row.hrv_ms !== null && row.hrv_ms !== undefined ? row.hrv_ms.toFixed(2) : '',
+        row.sleep_min !== null && row.sleep_min !== undefined ? row.sleep_min.toFixed(0) : '',
+        row.fatigue_1_5 !== null && row.fatigue_1_5 !== undefined ? row.fatigue_1_5.toFixed(0) : '',
+        row.training_load !== null && row.training_load !== undefined ? row.training_load.toFixed(0) : '',
+        row.calorie_intake_kcal !== null && row.calorie_intake_kcal !== undefined ? row.calorie_intake_kcal.toFixed(0) : '',
+        row.energy_expenditure_kcal !== null && row.energy_expenditure_kcal !== undefined
+          ? row.energy_expenditure_kcal.toFixed(0)
+          : '',
+        Number.isFinite(row.mas) ? row.mas.toFixed(4) : '',
+        Number.isFinite(row.rrs_v1) ? row.rrs_v1.toFixed(4) : '',
+        Number.isFinite(row.rrs_v2) ? row.rrs_v2.toFixed(4) : '',
+        Number.isFinite(row.rrs_display) ? row.rrs_display.toFixed(4) : '',
+        Number.isFinite(row.rrs_effective) ? row.rrs_effective.toFixed(4) : '',
+        Number.isFinite(row.refeed_cooldown) ? row.refeed_cooldown.toFixed(3) : '',
+        Number.isFinite(row.refeed_response) ? row.refeed_response.toFixed(3) : '',
+        row.deficit_streak,
+        Number.isFinite(row.training_load_factor) ? row.training_load_factor.toFixed(3) : '',
+        row.plateau_flag,
+        row.hard_locked,
+        row.observed_days,
+      ].join(','),
+    );
+  }
+  fs.writeFileSync(outputPath, `${lines.join('\n')}\n`, 'utf8');
 
   console.log('再計算が完了しました。');
 }

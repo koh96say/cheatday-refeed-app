@@ -31,6 +31,24 @@ const COEFFICIENTS = {
   d: 0.3,
 }
 
+type MetricConfig = {
+  weight: number
+  polarity: 1 | -1
+  sdFloor: number
+}
+
+const METRIC_CONFIG: Record<NumericMetricKey, MetricConfig> = {
+  temp_c: { weight: 0.35, polarity: -1, sdFloor: 0.1 },
+  rhr_bpm: { weight: 0.25, polarity: 1, sdFloor: 2 },
+  hrv_ms: { weight: 0.15, polarity: -1, sdFloor: 10 },
+  sleep_min: { weight: 0.15, polarity: -1, sdFloor: 30 },
+  fatigue_1_5: { weight: 0.1, polarity: 1, sdFloor: 0.5 },
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
+}
+
 function sortedMetrics(metrics: MetricDaily[]) {
   return metrics
     .slice()
@@ -71,6 +89,56 @@ function calculateZScore(value: number | null, stats: BaselineStats | null) {
   if (value === null || value === undefined || !stats) return 0
   const safeSd = stats.sd || 1
   return (value - stats.mean) / safeSd
+}
+
+function median(values: number[]) {
+  if (values.length === 0) {
+    return 0
+  }
+  const sorted = values.slice().sort((a, b) => a - b)
+  const mid = Math.floor(sorted.length / 2)
+
+  if (sorted.length % 2 === 0) {
+    return (sorted[mid - 1] + sorted[mid]) / 2
+  }
+  return sorted[mid]
+}
+
+function mad(values: number[], med: number) {
+  if (values.length === 0) {
+    return 0
+  }
+  const deviations = values.map((value) => Math.abs(value - med))
+  return median(deviations)
+}
+
+function computeRobustZ(
+  orderedMetrics: MetricDaily[],
+  key: NumericMetricKey,
+  config: MetricConfig
+) {
+  const allValues = orderedMetrics
+    .map((metric) => metric[key])
+    .filter((value): value is number => value !== null && value !== undefined)
+
+  if (allValues.length === 0) {
+    return { z: 0, hasValue: false }
+  }
+
+  const windowValues = allValues.slice(-28)
+  const med = median(windowValues)
+  const madValue = mad(windowValues, med)
+  const scale = Math.max(1.4826 * madValue, config.sdFloor)
+
+  const latestValue = orderedMetrics.at(-1)?.[key]
+  if (latestValue === null || latestValue === undefined) {
+    return { z: 0, hasValue: false }
+  }
+
+  const rawZ = (latestValue - med) / (scale || config.sdFloor)
+  const z = clamp(rawZ, -2.5, 2.5)
+
+  return { z, hasValue: true }
 }
 
 function computeSevenDaySlope(weights: { x: number; y: number }[]) {
@@ -166,30 +234,36 @@ export function calculateScores({
 
   const metricKeys: NumericMetricKey[] = ['temp_c', 'rhr_bpm', 'hrv_ms', 'sleep_min', 'fatigue_1_5']
   const zScores: Partial<Record<NumericMetricKey, number>> = {}
+  const effectiveWeights: Partial<Record<NumericMetricKey, number>> = {}
+
+  let activeWeightSum = 0
 
   for (const key of metricKeys) {
-    const values = orderedMetrics
-      .map((metric) => metric[key])
-      .filter((value): value is number => value !== null && value !== undefined)
+    const config = METRIC_CONFIG[key]
+    const { z, hasValue } = computeRobustZ(orderedMetrics, key, config)
+    zScores[key] = hasValue ? z : 0
 
-    if (values.length === 0) {
-      zScores[key] = 0
-      continue
+    if (hasValue) {
+      effectiveWeights[key] = config.weight
+      activeWeightSum += config.weight
+    } else {
+      effectiveWeights[key] = 0
     }
-
-    const trimmed = removeOutliers(values).slice(-28)
-    const baseline = computeBaselineStats(trimmed) ?? computeBaselineStats(values)
-    const latestValue = orderedMetrics.at(-1)?.[key] ?? null
-    const zScore = calculateZScore(latestValue, baseline)
-    zScores[key] = Number.isFinite(zScore) ? zScore : 0
   }
 
-  const mas =
-    0.35 * (-(zScores.temp_c ?? 0)) +
-    0.25 * (zScores.rhr_bpm ?? 0) +
-    0.15 * (-(zScores.hrv_ms ?? 0)) +
-    0.15 * (-(zScores.sleep_min ?? 0)) +
-    0.1 * (zScores.fatigue_1_5 ?? 0)
+  let mas = 0
+  if (activeWeightSum > 0) {
+    for (const key of metricKeys) {
+      const config = METRIC_CONFIG[key]
+      const normalizedWeight =
+        activeWeightSum > 0 && effectiveWeights[key] ? effectiveWeights[key]! / activeWeightSum : 0
+      const polarity = config.polarity
+      const z = zScores[key] ?? 0
+      mas += normalizedWeight * polarity * z
+    }
+  }
+
+  mas = clamp(mas, -3, 3)
 
   const plateauFlag = calculatePlateauFlag(orderedMetrics)
   const deficitStreak = computeDeficitStreak(orderedMetrics, estimatedTdee)

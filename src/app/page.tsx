@@ -77,8 +77,8 @@ export default async function HomePage() {
                 <h3 className="mt-4 text-xl font-semibold text-white">RRSが閾値に近づいています</h3>
                 <p className="mt-2 text-sm text-muted">
                   最新の指標でリフィード推奨ラインを超える兆候があります。入力データをチェックして日次のリカバリーを優先しましょう。
-                </p>
-              </div>
+            </p>
+          </div>
               <div className="flex flex-wrap gap-3">
                 <span className="app-pill border-none bg-accent/10 text-accent">RRS 0.64</span>
                 <span className="app-pill border-none bg-success/10 text-success">睡眠 7.8h</span>
@@ -108,7 +108,7 @@ export default async function HomePage() {
               <p className="mt-3 text-sm leading-relaxed text-muted">{item.body}</p>
               <div className="mt-6 h-px w-full bg-gradient-to-r from-transparent via-accent/40 to-transparent" />
               <p className="mt-6 text-xs uppercase tracking-[0.3em] text-muted">Metabolic • Insights</p>
-            </div>
+        </div>
           ))}
         </section>
       </div>
