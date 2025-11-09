@@ -31,7 +31,7 @@ export default async function TrendsPage() {
   ])
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-6 pb-16 pt-6">
       <TrendInsights metrics={metrics ?? []} scores={scores ?? []} />
     </div>
   )

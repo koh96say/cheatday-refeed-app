@@ -26,7 +26,7 @@ export default async function ProfilePage() {
   ])
 
   return (
-    <div className="mx-auto max-w-3xl space-y-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-12 px-6 pb-16 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Profile</p>

@@ -26,17 +26,17 @@ export function DashboardNav({ email, links }: DashboardNavProps) {
         >
           <span className="sr-only">メニューを開閉</span>
           <span
-            className={`relative block h-[1.5px] w-6 bg-white transition-all ${
+            className={`block h-[2px] w-7 origin-center rounded-full bg-white transition-transform duration-200 ease-out ${
               open ? 'translate-y-[6px] rotate-45' : ''
             }`}
           />
           <span
-            className={`relative block h-[1.5px] w-6 bg-white transition-all ${
+            className={`block h-[2px] w-7 origin-center rounded-full bg-white transition-opacity duration-150 ease-out ${
               open ? 'opacity-0' : ''
             }`}
           />
           <span
-            className={`relative block h-[1.5px] w-6 bg-white transition-all ${
+            className={`block h-[2px] w-7 origin-center rounded-full bg-white transition-transform duration-200 ease-out ${
               open ? '-translate-y-[6px] -rotate-45' : ''
             }`}
           />

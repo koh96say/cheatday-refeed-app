@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function HowToUsePage() {
   return (
-    <div className="mx-auto max-w-4xl space-y-10 pb-20 pt-16">
+    <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-10 px-6 pb-16 pt-6">
       <header className="app-card border border-white/10 bg-surface-soft/70 p-10 text-white">
         <p className="text-xs uppercase tracking-[0.35em] text-muted">スタートガイド</p>
         <h1 className="mt-4 text-3xl font-semibold tracking-tight">このアプリの使い方</h1>

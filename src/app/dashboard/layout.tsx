@@ -28,7 +28,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   return (
     <>
       <DashboardNav email={user.email ?? ''} links={navigationLinks} />
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-24">
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-10">
         <main className="flex-1">{children}</main>
       </div>
     </>

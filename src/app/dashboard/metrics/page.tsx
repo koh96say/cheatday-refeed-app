@@ -63,7 +63,7 @@ export default async function MetricsPage({ searchParams }: MetricsPageProps) {
   const editingExistingMetric = Boolean(targetDate && selectedMetric)
 
   return (
-    <div className="mx-auto w-full max-w-3xl space-y-8 py-10 sm:px-6 lg:px-8">
+    <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Daily Input</p>
