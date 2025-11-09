@@ -179,6 +179,7 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
   const [metricHovering, setMetricHovering] = useState<Record<string, boolean>>({})
   const sparkRefs = useRef<Record<string, SVGSVGElement | null>>({})
   const svgRef = useRef<SVGSVGElement | null>(null)
+  const [timelineMode, setTimelineMode] = useState<'text' | 'chart'>('text')
 
   useEffect(() => {
     if (selectedPreset === 'custom' && sortedMetrics.length > 0 && (!customStart || !customEnd)) {
@@ -391,12 +392,75 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
     })
   }, [activeMetrics])
 
+type TimelinePoint = {
+  x: number
+  value: number
+  label: string
+}
+
+type TimelineMetricSeries = {
+  key: keyof MetricDaily
+  label: string
+  unit: string
+  color: string
+  values: TimelinePoint[]
+  min: number
+  max: number
+}
+
   const timelineMetrics = useMemo(() => {
     return activeMetrics
       .slice()
       .sort((a, b) => (a.date < b.date ? 1 : -1))
       .slice(0, 21)
   }, [activeMetrics])
+
+const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
+  const reversed = timelineMetrics.slice().reverse()
+  if (reversed.length === 0) return []
+
+  const buildSeries = (key: keyof MetricDaily, label: string, unit: string, color: string, transform?: (value: number) => number) => {
+    const points: TimelinePoint[] = []
+    reversed.forEach((metric, index) => {
+      const raw = metric[key] as number | null | undefined
+      if (raw !== null && raw !== undefined) {
+        const value = transform ? transform(raw) : raw
+        points.push({
+          x: index,
+          value,
+          label: metric.date,
+        })
+      }
+    })
+
+    if (!points.length) {
+      return null
+    }
+
+    const values = points.map((point) => point.value)
+    const min = Math.min(...values)
+    const max = Math.max(...values)
+
+    return {
+      key,
+      label,
+      unit,
+      color,
+      values: points,
+      min,
+      max,
+    }
+  }
+
+  return [
+    buildSeries('weight_kg', '体重', 'kg', '#4C6EF5'),
+    buildSeries('rhr_bpm', 'RHR', 'bpm', '#F97316'),
+    buildSeries('temp_c', '体温', '℃', '#FBBF24'),
+    buildSeries('sleep_min', '睡眠', 'h', '#34D399', (value) => value / 60),
+    buildSeries('fatigue_1_5', '疲労', '', '#F472B6'),
+    buildSeries('training_load', '負荷', '', '#38BDF8'),
+  ].filter((series): series is TimelineMetricSeries => Boolean(series))
+}, [timelineMetrics])
 
   const scoreTableRows = useMemo(() => activeScores.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 21), [activeScores])
 
@@ -796,22 +860,147 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
         </section>
 
         <section className="app-card p-8">
-          <h2 className="text-lg font-semibold text-white">生体指標タイムライン</h2>
-          {activeMetrics.length > 0 ? (
-            <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-2">
-              {timelineMetrics.map((metric) => (
-                <div key={metric.date} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
-                  <p className="text-sm font-semibold text-white">{toDateLabel(metric.date)}</p>
-                  <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
-                    <span>体重: {metric.weight_kg ?? '--'} kg</span>
-                    <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
-                    <span>体温: {metric.temp_c ?? '--'} ℃</span>
-                    <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
-                    <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
-                    <span>負荷: {metric.training_load ?? '--'}</span>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold text-white">生体指標タイムライン</h2>
+            <div className="flex gap-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setTimelineMode('text')}
+                className={`rounded-full border px-4 py-2 font-medium transition ${
+                  timelineMode === 'text'
+                    ? 'border-white/30 bg-white/10 text-white'
+                    : 'border-white/10 bg-transparent text-muted hover:border-white/20 hover:text-white'
+                }`}
+              >
+                リスト表示
+              </button>
+              <button
+                type="button"
+                onClick={() => setTimelineMode('chart')}
+                className={`rounded-full border px-4 py-2 font-medium transition ${
+                  timelineMode === 'chart'
+                    ? 'border-white/30 bg-white/10 text-white'
+                    : 'border-white/10 bg-transparent text-muted hover:border-white/20 hover:text-white'
+                }`}
+              >
+                グラフ表示
+              </button>
+            </div>
+          </div>
+
+          {timelineMode === 'text' ? (
+            activeMetrics.length > 0 ? (
+              <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-2">
+                {timelineMetrics.map((metric) => (
+                  <div key={metric.date} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
+                    <p className="text-sm font-semibold text-white">{toDateLabel(metric.date)}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
+                      <span>体重: {metric.weight_kg ?? '--'} kg</span>
+                      <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
+                      <span>体温: {metric.temp_c ?? '--'} ℃</span>
+                      <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
+                      <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
+                      <span>負荷: {metric.training_load ?? '--'}</span>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
+            ) : (
+              <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
+                日次メトリクスがまだありません。まずは入力を行いましょう。
+              </div>
+            )
+          ) : timelineSeries.length > 0 ? (
+            <div className="mt-6 space-y-6">
+              {timelineSeries.map((series) => {
+                const seriesPaddingX = 16
+                const seriesPaddingY = 12
+                const seriesWidth = 520
+                const seriesHeight = 96
+                const usableWidth = seriesWidth - seriesPaddingX * 2
+                const usableHeight = seriesHeight - seriesPaddingY * 2
+                const minValue = series.min
+                const maxValue = series.max
+                const range = maxValue - minValue || 1
+                const step = series.values.length > 1 ? usableWidth / (series.values.length - 1) : 0
+
+                const points = series.values.map((point, index) => {
+                  const x = seriesPaddingX + index * step
+                  const normalized = (point.value - minValue) / range
+                  const y = seriesPaddingY + (1 - normalized) * usableHeight
+                  return { ...point, x, y }
+                })
+
+                return (
+                  <div key={series.key} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-semibold text-white">
+                          {series.label}{' '}
+                          <span className="text-xs text-muted">
+                            ({minValue.toFixed(1)} - {maxValue.toFixed(1)} {series.unit})
+                          </span>
+                        </p>
+                      </div>
+                    </div>
+                    <div className="relative mt-4">
+                      <svg viewBox={`0 0 ${seriesWidth} ${seriesHeight}`} className="h-28 w-full" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id={`timeline-${series.key}`} x1="0%" y1="0%" x2="0%" y2="100%">
+                            <stop offset="0%" stopColor={series.color} stopOpacity="0.3" />
+                            <stop offset="100%" stopColor={series.color} stopOpacity="0" />
+                          </linearGradient>
+                        </defs>
+                        <rect
+                          x={seriesPaddingX}
+                          y={seriesPaddingY}
+                          width={usableWidth}
+                          height={usableHeight}
+                          rx={12}
+                          className="fill-none stroke-white/10"
+                        />
+                        {[0.25, 0.5, 0.75].map((fraction) => (
+                          <line
+                            key={fraction}
+                            x1={seriesPaddingX}
+                            x2={seriesWidth - seriesPaddingX}
+                            y1={seriesPaddingY + fraction * usableHeight}
+                            y2={seriesPaddingY + fraction * usableHeight}
+                            className="stroke-white/5"
+                            strokeWidth={1}
+                            strokeDasharray="4 4"
+                          />
+                        ))}
+
+                        <path
+                          d={`M ${points.map((point) => `${point.x} ${point.y}`).join(' L ')}`}
+                          fill="none"
+                          stroke={series.color}
+                          strokeWidth={3}
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                        <path
+                          d={`M ${seriesPaddingX} ${seriesHeight - seriesPaddingY} L ${points
+                            .map((point) => `${point.x} ${point.y}`)
+                            .join(' L ')} L ${seriesWidth - seriesPaddingX} ${seriesHeight - seriesPaddingY} Z`}
+                          fill={`url(#timeline-${series.key})`}
+                        />
+                        {points.map((point) => (
+                          <circle key={point.label} cx={point.x} cy={point.y} r={4} fill={series.color} stroke="#ffffff" strokeWidth={1.5} />
+                        ))}
+                      </svg>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted">
+                        <span>最新: {points.at(-1)?.value.toFixed(2)} {series.unit}</span>
+                        <span>
+                          変化: {(points.at(-1)?.value ?? 0 - (points[0]?.value ?? 0) >= 0 ? '+' : '') +
+                            ((points.at(-1)?.value ?? 0) - (points[0]?.value ?? 0)).toFixed(2)} {series.unit}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
