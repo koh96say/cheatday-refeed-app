@@ -155,6 +155,10 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
   const [customStart, setCustomStart] = useState('')
   const [customEnd, setCustomEnd] = useState('')
   const [hoverIndex, setHoverIndex] = useState<number | null>(null)
+  const [isScoreHovering, setIsScoreHovering] = useState(false)
+  const [metricHoverIndex, setMetricHoverIndex] = useState<Record<string, number>>({})
+  const [metricHovering, setMetricHovering] = useState<Record<string, boolean>>({})
+  const sparkRefs = useRef<Record<string, SVGSVGElement | null>>({})
   const svgRef = useRef<SVGSVGElement | null>(null)
 
   useEffect(() => {
@@ -252,8 +256,10 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
   )
 
   const chartAvailable = Boolean(rrsLine && masLine && scoreSeries.length >= 2)
-  const activeHoverIndex = hoverIndex ?? (scoreSeries.length ? scoreSeries.length - 1 : null)
+  const fallbackScore = scoreSeries.length ? scoreSeries[scoreSeries.length - 1] : null
+  const activeHoverIndex = isScoreHovering ? hoverIndex : null
   const hoveredScore = activeHoverIndex !== null ? scoreSeries[activeHoverIndex] : null
+  const summaryScore = hoveredScore ?? fallbackScore
   const hoveredRrsPoint =
     activeHoverIndex !== null && rrsLine ? rrsLine.points[activeHoverIndex] : undefined
   const hoveredMasPoint =
@@ -272,9 +278,13 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
     const ratio = Math.min(Math.max(x / CHART_DIMENSIONS.width, 0), 1)
     const index = Math.round(ratio * (scoreSeries.length - 1))
     setHoverIndex(index)
+    setIsScoreHovering(true)
   }
 
-  const handlePointerLeave = () => setHoverIndex(null)
+  const handlePointerLeave = () => {
+    setHoverIndex(null)
+    setIsScoreHovering(false)
+  }
 
   const applyTransform = (
     value: number | null | undefined,
@@ -329,9 +339,12 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
               : 'text-warning'
             : 'text-success'
 
-      const seriesValues = reversedMetrics
-        .slice(0, 21)
-        .map((metric) => applyTransform(metric[card.key] as number | null | undefined, card.transform))
+      const trimmedMetrics = reversedMetrics.slice(0, 21)
+      const orderedMetrics = trimmedMetrics.slice().reverse()
+      const seriesValues = orderedMetrics.map((metric) =>
+        applyTransform(metric[card.key] as number | null | undefined, card.transform)
+      )
+      const seriesDates = orderedMetrics.map((metric) => metric.date)
       const spark = createSparklineData(seriesValues, {
         width: METRIC_CHART_DIMENSIONS.width,
         height: METRIC_CHART_DIMENSIONS.height,
@@ -344,6 +357,8 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
         deltaLabel,
         deltaClass,
         spark,
+        seriesValues,
+        seriesDates,
       }
     })
   }, [activeMetrics])
@@ -564,18 +579,18 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
           </div>
         )}
 
-        {hoveredScore && (
+        {summaryScore && (
           <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-muted">
             <div>
               RRS:{' '}
               <span className="font-semibold text-white">
-                {hoveredScore.rrs !== null ? hoveredScore.rrs.toFixed(2) : '--'}
+                {summaryScore.rrs !== null ? summaryScore.rrs.toFixed(2) : '--'}
               </span>
             </div>
             <div>
               MAS:{' '}
               <span className="font-semibold text-white">
-                {hoveredScore.mas !== null ? hoveredScore.mas.toFixed(2) : '--'}
+                {summaryScore.mas !== null ? summaryScore.mas.toFixed(2) : '--'}
               </span>
             </div>
           </div>
@@ -585,8 +600,19 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
       <section className="app-card p-8">
         {activeMetrics.length >= 4 ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {metricCards.map((card) => (
-              <div key={card.key} className="rounded-2xl border border-white/10 bg-surface-soft/70 p-5 backdrop-blur">
+            {metricCards.map((card) => {
+              const hovering = metricHovering[card.key] ?? false
+              const dataLength = card.seriesValues.length
+              const hoverIdx = hovering
+                ? Math.min(metricHoverIndex[card.key] ?? dataLength - 1, dataLength - 1)
+                : null
+              const hoverValue = hoverIdx !== null ? card.seriesValues[hoverIdx] : null
+              const hoverDate = hoverIdx !== null ? card.seriesDates[hoverIdx] : null
+              const hoverPoint =
+                hoverIdx !== null && card.spark ? card.spark.points[hoverIdx] : undefined
+
+              return (
+                <div key={card.key} className="rounded-2xl border border-white/10 bg-surface-soft/70 p-5 backdrop-blur">
                 <p className="text-xs uppercase tracking-[0.3em] text-muted">{card.label}</p>
                 <div className="mt-3 flex items-end justify-between">
                   <p className="text-3xl font-semibold text-white">
@@ -604,16 +630,35 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
                   先週平均:{' '}
                   {card.prevAvg !== null ? `${card.prevAvg.toFixed(card.precision)} ${card.unit}` : '--'}
                 </p>
-                {card.spark && (
-                  <div className="mt-4">
+                  {card.spark && dataLength > 0 && (
+                    <div className="relative mt-4">
                     <svg
+                        ref={(node) => {
+                          sparkRefs.current[card.key] = node
+                        }}
                       viewBox={`0 0 ${METRIC_CHART_DIMENSIONS.width} ${METRIC_CHART_DIMENSIONS.height}`}
-                      className="h-16 w-full"
+                        className="h-16 w-full cursor-crosshair"
                       preserveAspectRatio="none"
+                        onPointerMove={(event) => {
+                          const ref = sparkRefs.current[card.key]
+                          if (!ref) return
+                          const rect = ref.getBoundingClientRect()
+                          const x = event.clientX - rect.left
+                          const ratio = Math.min(
+                            Math.max(x / METRIC_CHART_DIMENSIONS.width, 0),
+                            1
+                          )
+                          const index = Math.round(ratio * (dataLength - 1))
+                          setMetricHoverIndex((prev) => ({ ...prev, [card.key]: index }))
+                          setMetricHovering((prev) => ({ ...prev, [card.key]: true }))
+                        }}
+                        onPointerLeave={() => {
+                          setMetricHovering((prev) => ({ ...prev, [card.key]: false }))
+                        }}
                     >
                       <path d={card.spark.areaPath} fill={card.accent} fillOpacity={0.15} />
                       <path d={card.spark.linePath} fill="none" stroke={card.accent} strokeWidth={2.5} />
-                      {card.spark.points.length > 0 && (
+                        {card.spark.points.length > 0 && (
                         <circle
                           cx={card.spark.points[card.spark.points.length - 1].x}
                           cy={card.spark.points[card.spark.points.length - 1].y}
@@ -623,11 +668,51 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
                           strokeWidth={1.5}
                         />
                       )}
+                        {hoverIdx !== null && hoverPoint && (
+                          <>
+                            <line
+                              x1={hoverPoint.x}
+                              y1={0}
+                              x2={hoverPoint.x}
+                              y2={METRIC_CHART_DIMENSIONS.height}
+                              className="stroke-white/20"
+                              strokeWidth={1}
+                              strokeDasharray="4 4"
+                            />
+                            <circle
+                              cx={hoverPoint.x}
+                              cy={hoverPoint.y}
+                              r={3.5}
+                              fill={card.accent}
+                              stroke="#FFFFFF"
+                              strokeWidth={1.2}
+                            />
+                          </>
+                        )}
                     </svg>
+                      {hoverIdx !== null && hoverValue !== null && hoverDate && (
+                        <div
+                          className="pointer-events-none absolute -top-16 min-w-[160px] rounded-xl border border-white/15 bg-background/90 px-4 py-3 text-xs shadow-card"
+                          style={{
+                            left: `clamp(8px, ${
+                              ((hoverPoint?.x ?? 0) / METRIC_CHART_DIMENSIONS.width) * 100
+                            }%, calc(100% - 168px))`,
+                          }}
+                        >
+                          <p className="text-muted">{toDateLabel(hoverDate)}</p>
+                          <p className="mt-2 flex items-center justify-between text-white">
+                            <span>値</span>
+                            <span>
+                              {hoverValue.toFixed(card.precision)} {card.unit}
+                            </span>
+                          </p>
+                        </div>
+                      )}
                   </div>
                 )}
               </div>
-            ))}
+              )
+            })}
           </div>
         ) : (
           <div className="rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
