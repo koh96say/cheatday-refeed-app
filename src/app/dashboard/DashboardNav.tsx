@@ -16,13 +16,13 @@ export function DashboardNav({ email, links }: DashboardNavProps) {
 
   return (
     <>
-      <div className="fixed right-6 top-6 z-50 flex items-center gap-3">
+      <div className="fixed right-6 top-[1rem] z-50 flex items-center gap-3">
         <button
           type="button"
           onClick={toggleMenu}
           aria-expanded={open}
           aria-controls="dashboard-nav-menu"
-          className="app-button-secondary h-12 w-12 flex-col justify-center gap-1.5 p-0 text-sm"
+          className="inline-flex h-12 w-12 flex-col items-center justify-center gap-1.5 rounded-xl border border-white/10 bg-surface-soft/80 p-0 text-sm font-semibold text-gray-200 transition hover:border-white/20 hover:bg-surface-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
         >
           <span className="sr-only">メニューを開閉</span>
           <span
