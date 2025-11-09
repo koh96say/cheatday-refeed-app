@@ -24,10 +24,15 @@ export interface RRSv2Result {
   hardLocked: boolean
   effectiveWindow: number
   observedDays: number
+  displayRrs: number
+  effectiveRrs: number
+  thresholdOn: number
+  thresholdOff: number
+  thresholdDelta: number
 }
 
-const DEFAULT_EFFECT_WINDOW = 7
-const MIN_GAP_DAYS = 2
+const DEFAULT_EFFECT_WINDOW = 9
+const MIN_GAP_DAYS = 3
 const SIGMOID_K = 2
 const SIGMOID_X0 = 0.5
 
@@ -36,8 +41,8 @@ const COEFFICIENTS = {
   plateau: 0.7,
   deficit: 0.3,
   training: 0.2,
-  cooldown: 1.2,
-  response: 0.8,
+  cooldown: 1.6,
+  response: 0.6,
 }
 
 const NORMALISERS = {
@@ -49,6 +54,14 @@ const WEIGHTS = {
   temp: 0.6,
   rhr: 0.4,
 }
+
+const THRESHOLDS = {
+  on: 0.71,
+  off: 0.65,
+  delta: 0.03,
+}
+
+const LOCK_PENALTY = 2.5
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
@@ -176,7 +189,7 @@ function computeRefeedResponse(
 
   const weighted =
     (WEIGHTS.temp * gTemp + WEIGHTS.rhr * gRhr) / (WEIGHTS.temp + WEIGHTS.rhr)
-  const response = clamp(weighted, -1, 1)
+  const response = clamp(weighted, -0.5, 0.5)
 
   return { response, observedDays, extendedWindow: 0 }
 }
@@ -225,7 +238,11 @@ export function computeRRSv2(input: RRSv2Input): RRSv2Result {
     }
   }
 
-  const normalizedDeficit = clamp(deficitStreak / 14, 0, 1)
+  let deficitUsed = deficitStreak
+  if (hasRefeed && daysSinceRefeed >= 0 && daysSinceRefeed < 3) {
+    deficitUsed *= 0.5
+  }
+  const normalizedDeficit = clamp(deficitUsed / 14, 0, 1)
   const baseInput =
     COEFFICIENTS.mas * mas +
     COEFFICIENTS.plateau * (plateauFlag ? 1 : 0) +
@@ -238,6 +255,11 @@ export function computeRRSv2(input: RRSv2Input): RRSv2Result {
     COEFFICIENTS.response * response
 
   const rrs = hardLocked ? 0 : sigmoid(adjusted)
+  const inCooldown = cooldown > 0
+  const displayRrs = inCooldown ? Math.min(rrs, THRESHOLDS.on - 0.01) : rrs
+
+  const effectiveInput = inCooldown ? adjusted - LOCK_PENALTY : adjusted
+  const effectiveRrs = hardLocked ? 0 : sigmoid(effectiveInput)
 
   return {
     rrs,
@@ -247,6 +269,11 @@ export function computeRRSv2(input: RRSv2Input): RRSv2Result {
     hardLocked,
     effectiveWindow,
     observedDays,
+    displayRrs,
+    effectiveRrs,
+    thresholdOn: THRESHOLDS.on,
+    thresholdOff: THRESHOLDS.off,
+    thresholdDelta: THRESHOLDS.delta,
   }
 }
 

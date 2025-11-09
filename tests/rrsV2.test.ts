@@ -58,6 +58,11 @@ describe('computeRRSv2', () => {
     expect(result.hardLocked).toBe(true)
     expect(result.rrs).toBe(0)
     expect(result.cooldown).toBeGreaterThan(0)
+    expect(result.displayRrs).toBe(0)
+    expect(result.effectiveRrs).toBe(0)
+    expect(result.thresholdOn).toBeCloseTo(0.71)
+    expect(result.thresholdOff).toBeCloseTo(0.65)
+    expect(result.thresholdDelta).toBeCloseTo(0.03)
   })
 
   it('incorporates positive refeed response when data is available', () => {
@@ -97,6 +102,11 @@ describe('computeRRSv2', () => {
     expect(result.cooldown).toBeGreaterThan(0)
     expect(result.response).toBeGreaterThan(0)
     expect(result.rrs).toBeGreaterThan(0)
+    expect(result.displayRrs).toBeLessThanOrEqual(result.rrs)
+    expect(result.effectiveRrs).toBeLessThanOrEqual(result.rrs)
+    expect(result.thresholdOn).toBeCloseTo(0.71)
+    expect(result.thresholdOff).toBeCloseTo(0.65)
+    expect(result.thresholdDelta).toBeCloseTo(0.03)
   })
 })
 
