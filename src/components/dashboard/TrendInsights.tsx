@@ -946,19 +946,35 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
           {timelineMode === 'text' ? (
             activeMetrics.length > 0 ? (
               <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-2">
-                {timelineMetrics.map((metric) => (
-                  <div key={metric.date} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
-                    <p className="text-sm font-semibold text-white">{toDateLabel(metric.date)}</p>
-                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
-                      <span>体重: {metric.weight_kg ?? '--'} kg</span>
-                      <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
-                      <span>体温: {metric.temp_c ?? '--'} ℃</span>
-                      <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
-                      <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
-                      <span>負荷: {metric.training_load ?? '--'}</span>
+                {timelineMetrics.map((metric) => {
+                  const executed = executedDateSet.has(metric.date)
+                  return (
+                    <div
+                      key={metric.date}
+                      className={`rounded-2xl border bg-surface-soft/70 p-4 ${
+                        executed ? 'border-warning/60 ring-1 ring-warning/20' : 'border-white/5'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-semibold text-white">{toDateLabel(metric.date)}</p>
+                        {executed && (
+                          <span className="inline-flex items-center gap-1.5 rounded-full bg-warning/15 px-3 py-1 text-[11px] font-semibold text-warning">
+                            <span className="h-1.5 w-1.5 rounded-full bg-warning" />
+                            リフィード実施
+                          </span>
+                        )}
+                      </div>
+                      <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
+                        <span>体重: {metric.weight_kg ?? '--'} kg</span>
+                        <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
+                        <span>体温: {metric.temp_c ?? '--'} ℃</span>
+                        <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
+                        <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
+                        <span>負荷: {metric.training_load ?? '--'}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
@@ -985,6 +1001,9 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                   const y = seriesPaddingY + (1 - normalized) * usableHeight
                   return { ...point, x, y }
                 })
+
+                const latestPoint = points.at(-1)
+                const latestExecuted = latestPoint ? executedDateSet.has(latestPoint.label) : false
 
                 return (
                   <div key={series.key} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
@@ -1041,15 +1060,49 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                             .join(' L ')} L ${seriesWidth - seriesPaddingX} ${seriesHeight - seriesPaddingY} Z`}
                           fill={`url(#timeline-${series.key})`}
                         />
-                        {points.map((point) => (
-                          <circle key={point.label} cx={point.x} cy={point.y} r={4} fill={series.color} stroke="#ffffff" strokeWidth={1.5} />
-                        ))}
+                        {points.map((point) => {
+                          const executed = executedDateSet.has(point.label)
+                          return (
+                            <g key={point.label}>
+                              {executed && (
+                                <circle
+                                  cx={point.x}
+                                  cy={point.y}
+                                  r={7}
+                                  fill="none"
+                                  stroke="#FACC15"
+                                  strokeWidth={1.4}
+                                  strokeDasharray="2 2"
+                                />
+                              )}
+                              <circle
+                                cx={point.x}
+                                cy={point.y}
+                                r={4}
+                                fill={executed ? '#FACC15' : series.color}
+                                stroke="#ffffff"
+                                strokeWidth={1.5}
+                              >
+                                <title>
+                                  {`${toDateLabel(point.label)}: ${point.value.toFixed(2)} ${series.unit}${
+                                    executed ? '（リフィード実施）' : ''
+                                  }`}
+                                </title>
+                              </circle>
+                            </g>
+                          )
+                        })}
                       </svg>
                       <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted">
-                        <span>最新: {points.at(-1)?.value.toFixed(2)} {series.unit}</span>
                         <span>
-                          変化: {(points.at(-1)?.value ?? 0 - (points[0]?.value ?? 0) >= 0 ? '+' : '') +
-                            ((points.at(-1)?.value ?? 0) - (points[0]?.value ?? 0)).toFixed(2)} {series.unit}
+                          最新: {latestPoint?.value.toFixed(2)} {series.unit}
+                          {latestExecuted && <span className="ml-1 font-semibold text-warning">• リフィード実施</span>}
+                        </span>
+                        <span>
+                          変化:{' '}
+                          {(points.at(-1)?.value ?? 0 - (points[0]?.value ?? 0) >= 0 ? '+' : '') +
+                            ((points.at(-1)?.value ?? 0) - (points[0]?.value ?? 0)).toFixed(2)}{' '}
+                          {series.unit}
                         </span>
                       </div>
                     </div>
