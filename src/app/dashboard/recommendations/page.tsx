@@ -34,6 +34,9 @@ export default async function RecommendationsPage() {
         <p className="text-xs uppercase tracking-[0.35em] text-muted">Recommendations</p>
         <h1 className="mt-2 text-2xl font-semibold text-white">リフィード提案履歴</h1>
         <p className="mt-2 text-sm text-muted">リフィード提案が発生したタイミングとその根拠を振り返れます。</p>
+        <p className="mt-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-xs text-muted">
+          リフィードを実施した場合は、該当日の「実施状況」スイッチをオンにしてください。実績が記録されると、推移分析や今後の提案精度が向上します。
+        </p>
       </div>
 
       <div className="app-card p-8">
