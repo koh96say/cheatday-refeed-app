@@ -3,6 +3,7 @@ import { cookies } from 'next/headers'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { ensureUserRecords } from '@/lib/auth/ensureUser'
 import { calculateScores, computeRefeedTargets } from '@/lib/calculations/rrs'
+import { evaluateGuardFlags, shouldSuppressRecommendation } from '@/lib/calculations/guards'
 
 function parseNumber(value: unknown) {
   if (value === null || value === undefined || value === '') return null
@@ -84,35 +85,62 @@ export async function POST(request: Request) {
     .eq('user_id', userRecord.id)
     .maybeSingle()
 
+  const metricPayload = {
+    user_id: userRecord.id,
+    date: payload.date,
+    weight_kg: weight,
+    rhr_bpm: rhr,
+    temp_c: temp,
+    hrv_ms: hrv,
+    sleep_min: sleep,
+    fatigue_1_5: fatigue,
+    training_load: trainingLoad,
+    calorie_intake_kcal: calorieIntake,
+    energy_expenditure_kcal: energyExpenditure,
+    notes,
+  }
+
   const { data: upsertedMetric, error: metricError } = await supabase
     .from('metrics_daily')
-    .upsert(
-      {
-        user_id: userRecord.id,
-        date: payload.date,
-        weight_kg: weight,
-        rhr_bpm: rhr,
-        temp_c: temp,
-        hrv_ms: hrv,
-        sleep_min: sleep,
-        fatigue_1_5: fatigue,
-        training_load: trainingLoad,
-        calorie_intake_kcal: calorieIntake,
-        energy_expenditure_kcal: energyExpenditure,
-        notes,
-      },
-      {
-        onConflict: 'user_id,date',
-      }
-    )
+    .upsert(metricPayload, {
+      onConflict: 'user_id,date',
+    })
     .select('*')
     .single()
 
-  if (metricError || !upsertedMetric) {
-    return NextResponse.json(
-      { error: metricError?.message ?? 'Failed to upsert metrics' },
-      { status: 500 }
-    )
+  let metricRecord = upsertedMetric
+  if (metricError || !metricRecord) {
+    const needsFallback =
+      metricError?.message?.includes(`'calorie_intake_kcal'`) ||
+      metricError?.message?.includes(`'energy_expenditure_kcal'`)
+
+    if (!needsFallback) {
+      return NextResponse.json(
+        { error: metricError?.message ?? 'Failed to upsert metrics' },
+        { status: 500 }
+      )
+    }
+
+    const fallbackPayload = { ...metricPayload }
+    delete (fallbackPayload as Record<string, unknown>).calorie_intake_kcal
+    delete (fallbackPayload as Record<string, unknown>).energy_expenditure_kcal
+
+    const { data: fallbackMetric, error: fallbackError } = await supabase
+      .from('metrics_daily')
+      .upsert(fallbackPayload, {
+        onConflict: 'user_id,date',
+      })
+      .select('*')
+      .single()
+
+    if (fallbackError || !fallbackMetric) {
+      return NextResponse.json(
+        { error: fallbackError?.message ?? 'Failed to upsert metrics (fallback)' },
+        { status: 500 }
+      )
+    }
+
+    metricRecord = fallbackMetric
   }
 
   const { data: metricsHistory, error: historyError } = await supabase
@@ -131,23 +159,8 @@ export async function POST(request: Request) {
 
   const latestWeight = metricsHistory.slice().reverse().find((metric) => metric.weight_kg !== null)?.weight_kg
 
-  const guardFlags = {
-    feverLike: Boolean(upsertedMetric.temp_c && upsertedMetric.temp_c >= 37.5),
-    acuteWeightGain: false,
-  }
-
-  const weightSeries = metricsHistory
-    .filter((metric) => metric.weight_kg !== null && metric.weight_kg !== undefined)
-    .slice(-3)
-  if (weightSeries.length >= 3) {
-    const start = weightSeries[0].weight_kg!
-    const end = weightSeries[weightSeries.length - 1].weight_kg!
-    if (start > 0 && (end - start) / start >= 0.015) {
-      guardFlags.acuteWeightGain = true
-    }
-  }
-
-  const shouldSuppress = Object.values(guardFlags).some(Boolean)
+  const guardFlags = evaluateGuardFlags(metricRecord, metricsHistory)
+  const shouldSuppress = shouldSuppressRecommendation(guardFlags)
 
   const score = calculateScores({
     metrics: metricsHistory,
@@ -219,7 +232,7 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({
-    metric: upsertedMetric,
+    metric: metricRecord,
     score,
     recommendation,
     guards: guardFlags,

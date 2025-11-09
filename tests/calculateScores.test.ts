@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { calculateScores, computeRefeedTargets } from '@/lib/calculations/rrs'
+import { evaluateGuardFlags, shouldSuppressRecommendation } from '@/lib/calculations/guards'
 import type { MetricDaily } from '@/types'
 
 function createMetric({
@@ -133,6 +134,44 @@ describe('computeRefeedTargets', () => {
     expect(targets?.carb_g).toBeGreaterThan(0)
     expect(targets?.protein_g).toBeGreaterThan(0)
     expect(targets?.fat_g).toBeGreaterThan(0)
+  })
+})
+
+describe('guard rail evaluation', () => {
+  it('detects fever-like conditions', () => {
+    const metrics: MetricDaily[] = Array.from({ length: 5 }, (_, index) =>
+      createMetric({
+        date: generateDate(index),
+        weight: 68,
+        temp: 36.6,
+      })
+    )
+
+    const flags = evaluateGuardFlags(
+      {
+        ...metrics[metrics.length - 1],
+        temp_c: 37.6,
+      },
+      metrics
+    )
+
+    expect(flags.feverLike).toBe(true)
+    expect(shouldSuppressRecommendation(flags)).toBe(true)
+  })
+
+  it('detects acute weight gain over three days', () => {
+    const metrics: MetricDaily[] = [
+      createMetric({ date: generateDate(0), weight: 67.8, temp: 36.5 }),
+      createMetric({ date: generateDate(1), weight: 67.9, temp: 36.5 }),
+      createMetric({ date: generateDate(2), weight: 68.0, temp: 36.5 }),
+      createMetric({ date: generateDate(3), weight: 68.4, temp: 36.5 }),
+      createMetric({ date: generateDate(4), weight: 69.5, temp: 36.5 }),
+    ]
+
+    const flags = evaluateGuardFlags(metrics[metrics.length - 1], metrics)
+
+    expect(flags.acuteWeightGain).toBe(true)
+    expect(shouldSuppressRecommendation(flags)).toBe(true)
   })
 })
 
