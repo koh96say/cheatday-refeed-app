@@ -13,7 +13,11 @@ const PRESET_RANGES = [
 ] as const
 
 const CHART_DIMENSIONS = { width: 520, height: 160 }
-const METRIC_CHART_DIMENSIONS = { width: 220, height: 64 }
+const METRIC_CHART_DIMENSIONS = { width: 320, height: 96 }
+const SCORE_CHART_PADDING_X = 16
+const SCORE_CHART_PADDING_Y = 12
+const METRIC_CHART_PADDING_X = 14
+const METRIC_CHART_PADDING_Y = 10
 const SCORE_COLOR_RRS = '#4C6EF5'
 const SCORE_COLOR_MAS = '#A855F7'
 
@@ -22,6 +26,8 @@ type SparklineOptions = {
   height?: number
   min?: number
   max?: number
+  paddingX?: number
+  paddingY?: number
 }
 
 type SparklinePoint = {
@@ -86,6 +92,8 @@ function createSparklineData(
 ): SparklineData | null {
   const width = options.width ?? 160
   const height = options.height ?? 56
+  const paddingX = Math.min(options.paddingX ?? 0, width / 2)
+  const paddingY = Math.min(options.paddingY ?? 8, height / 2)
 
   const numericValues = values
     .map((value) => {
@@ -99,15 +107,25 @@ function createSparklineData(
     return null
   }
 
-  const minValue = options.min ?? Math.min(...numericValues)
-  const maxValue = options.max ?? Math.max(...numericValues)
+  const baseMin = options.min ?? Math.min(...numericValues)
+  const baseMax = options.max ?? Math.max(...numericValues)
+  const baseRange = baseMax - baseMin
+  const paddingRange = baseRange === 0 ? Math.max(Math.abs(baseMin) * 0.1, 0.5) : baseRange * 0.1
+  const minValue = baseMin - paddingRange
+  const maxValue = baseMax + paddingRange
   const range = maxValue - minValue || 1
-  const step = width / (numericValues.length - 1)
+  const usableWidth = Math.max(width - paddingX * 2, 1)
+  const drawableHeight = Math.max(height - paddingY * 2, 1)
+  const denominator = numericValues.length - 1 || 1
+  const step = usableWidth / denominator
 
   const points: SparklinePoint[] = numericValues.map((value, index) => {
-    const x = index === numericValues.length - 1 ? width : Number((index * step).toFixed(2))
+    const isLast = index === numericValues.length - 1
+    const x = Number(
+      (isLast ? width - paddingX : paddingX + index * step).toFixed(2)
+    )
     const normalized = (value - minValue) / range
-    const y = Number((height - normalized * height).toFixed(2))
+    const y = Number((paddingY + (1 - normalized) * drawableHeight).toFixed(2))
     return { x, y }
   })
 
@@ -116,11 +134,12 @@ function createSparklineData(
     linePath += `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y} `
   })
 
-  let areaPath = `M 0 ${height} `
+  const baselineY = Number((height - paddingY).toFixed(2))
+  let areaPath = `M ${paddingX} ${baselineY} `
   points.forEach((point) => {
     areaPath += `L ${point.x} ${point.y} `
   })
-  areaPath += `L ${width} ${height} Z`
+  areaPath += `L ${width - paddingX} ${baselineY} L ${paddingX} ${baselineY} Z`
 
   return {
     linePath: linePath.trim(),
@@ -237,6 +256,8 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
             height: CHART_DIMENSIONS.height,
             min: chartMin,
             max: chartMax,
+            paddingX: SCORE_CHART_PADDING_X,
+            paddingY: SCORE_CHART_PADDING_Y,
           })
         : null,
     [scoreSeries, chartMin, chartMax]
@@ -250,6 +271,8 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
             height: CHART_DIMENSIONS.height,
             min: chartMin,
             max: chartMax,
+            paddingX: SCORE_CHART_PADDING_X,
+            paddingY: SCORE_CHART_PADDING_Y,
           })
         : null,
     [scoreSeries, chartMin, chartMax]
@@ -275,8 +298,11 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
     if (!svgRef.current || !chartAvailable || scoreSeries.length === 0) return
     const rect = svgRef.current.getBoundingClientRect()
     const x = event.clientX - rect.left
-    const ratio = Math.min(Math.max(x / rect.width, 0), 1)
-    const index = Math.round(ratio * (scoreSeries.length - 1))
+    const paddingRatio = SCORE_CHART_PADDING_X / CHART_DIMENSIONS.width
+    const usableRatio = Math.max(1 - paddingRatio * 2, 0.0001)
+    const normalized = (x / rect.width - paddingRatio) / usableRatio
+    const clamped = Math.min(Math.max(normalized, 0), 1)
+    const index = Math.round(clamped * (scoreSeries.length - 1))
     setHoverIndex(index)
     setIsScoreHovering(true)
   }
@@ -348,6 +374,8 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
       const spark = createSparklineData(seriesValues, {
         width: METRIC_CHART_DIMENSIONS.width,
         height: METRIC_CHART_DIMENSIONS.height,
+        paddingX: METRIC_CHART_PADDING_X,
+        paddingY: METRIC_CHART_PADDING_Y,
       })
 
       return {
@@ -637,15 +665,18 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
                           sparkRefs.current[card.key] = node
                         }}
                       viewBox={`0 0 ${METRIC_CHART_DIMENSIONS.width} ${METRIC_CHART_DIMENSIONS.height}`}
-                        className="h-16 w-full cursor-crosshair"
+                        className="h-24 w-full cursor-crosshair"
                       preserveAspectRatio="none"
                         onPointerMove={(event) => {
                           const ref = sparkRefs.current[card.key]
                           if (!ref) return
                           const rect = ref.getBoundingClientRect()
                           const x = event.clientX - rect.left
-                          const ratio = Math.min(Math.max(x / rect.width, 0), 1)
-                          const index = Math.round(ratio * (dataLength - 1))
+                          const paddingRatio = METRIC_CHART_PADDING_X / METRIC_CHART_DIMENSIONS.width
+                          const usableRatio = Math.max(1 - paddingRatio * 2, 0.0001)
+                          const normalized = (x / rect.width - paddingRatio) / usableRatio
+                          const clamped = Math.min(Math.max(normalized, 0), 1)
+                          const index = Math.round(clamped * (dataLength - 1))
                           setMetricHoverIndex((prev) => ({ ...prev, [card.key]: index }))
                           setMetricHovering((prev) => ({ ...prev, [card.key]: true }))
                         }}
