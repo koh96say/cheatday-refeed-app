@@ -370,13 +370,25 @@ export default async function DashboardPage() {
               <tbody className="divide-y divide-white/5">
                 {sortedRecentMetrics.length > 0 ? (
                   sortedRecentMetrics.map((metric) => (
-                    <tr key={metric.date} className="hover:bg-white/5">
-                      <td>{formatDate(metric.date)}</td>
-                      <td>{metric.weight_kg ?? '--'}</td>
-                      <td>{metric.rhr_bpm ?? '--'}</td>
-                      <td>{metric.temp_c ?? '--'}</td>
-                      <td>{metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'}</td>
-                      <td>{metric.fatigue_1_5 ?? '--'}</td>
+                    <tr key={metric.date} className="hover:bg-white/5 transition">
+                      {[
+                        formatDate(metric.date),
+                        metric.weight_kg ?? '--',
+                        metric.rhr_bpm ?? '--',
+                        metric.temp_c ?? '--',
+                        metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--',
+                        metric.fatigue_1_5 ?? '--',
+                      ].map((value, idx) => (
+                        <td key={idx} className="p-0">
+                          <Link
+                            href={`/dashboard/metrics?date=${metric.date}`}
+                            className="block px-3 py-2"
+                            aria-label={`${formatDate(metric.date)} のメトリクスを編集`}
+                          >
+                            {value}
+                          </Link>
+                        </td>
+                      ))}
                     </tr>
                   ))
                 ) : (
