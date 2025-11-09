@@ -503,10 +503,10 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-muted">Trends</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">トレンド分析</h1>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">Progress</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">プログレス</h1>
           <p className="mt-2 text-sm text-muted">
-            選択した期間内のメトリクスとスコアの推移を可視化します。リフィード判断のヒントになる変化を確認しましょう。
+            選択した期間内のメトリクスとスコアの推移を可視化し、コンディションのプログレスを確認しましょう。
           </p>
         </div>
       </div>

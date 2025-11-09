@@ -159,7 +159,7 @@ export default async function DashboardPage() {
         headline: '停滞の兆候を注視しましょう',
         ctas: [
           { href: '/dashboard/metrics', label: 'メトリクスを入力', variant: 'primary' },
-          { href: '/dashboard/trends', label: 'トレンドを確認', variant: 'secondary' },
+          { href: '/dashboard/trends', label: 'プログレスを確認', variant: 'secondary' },
         ],
       }
     }
@@ -277,7 +277,7 @@ export default async function DashboardPage() {
               メトリクス入力
             </Link>
             <Link href="/dashboard/trends" className="app-button-secondary">
-              トレンドを見る
+              プログレスを見る
             </Link>
             <Link href="/dashboard/recommendations" className="app-button-secondary">
               提案を確認

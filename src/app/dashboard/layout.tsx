@@ -10,7 +10,7 @@ type DashboardLayoutProps = {
 const navigationLinks = [
   { href: '/dashboard', label: 'ダッシュボード' },
   { href: '/dashboard/metrics', label: 'メトリクス入力' },
-  { href: '/dashboard/trends', label: 'トレンド分析' },
+  { href: '/dashboard/trends', label: 'プログレス' },
   { href: '/dashboard/recommendations', label: '提案履歴' },
   { href: '/dashboard/profile', label: 'プロフィール' },
 ]
