@@ -15,7 +15,7 @@ export default async function TrendsPage() {
 
   const userRecord = await ensureUserRecords(supabase, user.id)
 
-  const [{ data: metrics }, { data: scores }] = await Promise.all([
+  const [{ data: metrics }, { data: scores }, { data: recommendations }] = await Promise.all([
     supabase
       .from('metrics_daily')
       .select('*')
@@ -28,11 +28,25 @@ export default async function TrendsPage() {
       .eq('user_id', userRecord.id)
       .order('date', { ascending: true })
       .limit(365),
+    supabase
+      .from('recommendations')
+      .select('date, executed')
+      .eq('user_id', userRecord.id)
+      .order('date', { ascending: true })
+      .limit(365),
   ])
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-10 px-6 pb-16 pt-6">
-      <TrendInsights metrics={metrics ?? []} scores={scores ?? []} />
+      <TrendInsights
+        metrics={metrics ?? []}
+        scores={scores ?? []}
+        executedRecommendationDates={
+          (recommendations ?? [])
+            .filter((item) => item.executed === true)
+            .map((item) => item.date)
+        }
+      />
     </div>
   )
 }

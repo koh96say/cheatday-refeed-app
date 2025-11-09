@@ -157,9 +157,14 @@ function extractNumeric(values: Array<number | null | undefined>) {
 type TrendInsightsProps = {
   metrics: MetricDaily[]
   scores: Score[]
+  executedRecommendationDates?: string[]
 }
 
-export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
+export function TrendInsights({
+  metrics,
+  scores,
+  executedRecommendationDates = [],
+}: TrendInsightsProps) {
   const sortedMetrics = useMemo(
     () => metrics.slice().sort((a, b) => (a.date < b.date ? -1 : 1)),
     [metrics]
@@ -325,6 +330,16 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
   const rangeSummary =
     rangeStart && rangeEnd ? `${toFullDateLabel(rangeStart)} 〜 ${toFullDateLabel(rangeEnd)}` : '全期間'
 
+  const executedDateSet = useMemo(() => {
+    const set = new Set<string>()
+    executedRecommendationDates.forEach((date) => {
+      if (date) {
+        set.add(date)
+      }
+    })
+    return set
+  }, [executedRecommendationDates])
+
   const metricCards = useMemo(() => {
     const recentMetrics = activeMetrics
     const reversedMetrics = recentMetrics.slice().reverse()
@@ -367,10 +382,27 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
 
       const trimmedMetrics = reversedMetrics.slice(0, 21)
       const orderedMetrics = trimmedMetrics.slice().reverse()
-      const seriesValues = orderedMetrics.map((metric) =>
-        applyTransform(metric[card.key] as number | null | undefined, card.transform)
-      )
-      const seriesDates = orderedMetrics.map((metric) => metric.date)
+      const valuePairs = orderedMetrics
+        .map((metric) => {
+          const rawValue = metric[card.key] as number | null | undefined
+          const transformed = applyTransform(rawValue, card.transform)
+          if (transformed === null || Number.isNaN(transformed)) {
+            return null
+          }
+          return {
+            date: metric.date,
+            value: transformed,
+          }
+        })
+        .filter(
+          (entry): entry is { date: string; value: number } =>
+            entry !== null && Number.isFinite(entry.value)
+        )
+
+      const seriesValues = valuePairs.map((entry) => entry.value)
+      const seriesDates = valuePairs.map((entry) => entry.date)
+      const executedFlags = seriesDates.map((date) => executedDateSet.has(date))
+
       const spark = createSparklineData(seriesValues, {
         width: METRIC_CHART_DIMENSIONS.width,
         height: METRIC_CHART_DIMENSIONS.height,
@@ -387,9 +419,10 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
         spark,
         seriesValues,
         seriesDates,
+        executedFlags,
       }
     })
-  }, [activeMetrics])
+  }, [activeMetrics, executedDateSet])
 
 type TimelinePoint = {
   x: number
@@ -746,6 +779,27 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                     >
                       <path d={card.spark.areaPath} fill={card.accent} fillOpacity={0.15} />
                       <path d={card.spark.linePath} fill="none" stroke={card.accent} strokeWidth={2.5} />
+                      {card.spark.points.map((point, idx) => {
+                        if (!card.executedFlags[idx]) {
+                          return null
+                        }
+                        const dateLabel = card.seriesDates[idx]
+                        return (
+                          <g key={`executed-${card.key}-${dateLabel}`}>
+                            <circle
+                              cx={point.x}
+                              cy={point.y}
+                              r={6}
+                              fill="none"
+                              stroke="#FACC15"
+                              strokeWidth={1.4}
+                              strokeDasharray="2 2"
+                            />
+                            <circle cx={point.x} cy={point.y} r={3} fill="#FACC15" />
+                            <title>{`リフィード実施日: ${toDateLabel(dateLabel)}`}</title>
+                          </g>
+                        )
+                      })}
                         {card.spark.points.length > 0 && (
                         <circle
                           cx={card.spark.points[card.spark.points.length - 1].x}
@@ -794,6 +848,11 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                               {hoverValue.toFixed(card.precision)} {card.unit}
                             </span>
                           </p>
+                          {card.executedFlags[hoverIdx] && (
+                            <p className="mt-1 text-[11px] font-medium text-warning">
+                              リフィード実施日
+                            </p>
+                          )}
                         </div>
                       )}
                   </div>
