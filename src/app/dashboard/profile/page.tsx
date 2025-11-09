@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServerComponentClient } from '@/lib/supabase/server'
 import { ensureUserRecords } from '@/lib/auth/ensureUser'
@@ -27,17 +26,12 @@ export default async function ProfilePage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-12 px-6 pb-16 pt-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Profile</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">プロフィールと代謝設定</h1>
-          <p className="mt-2 text-sm text-muted">
-            推定TDEEや身体情報を更新すると、提案されるカロリー配分があなたのコンディションに合わせて最適化されます。
-          </p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">プロフィール設定</h1>
+          <p className="mt-2 text-sm text-muted">目標や生活状況に合わせてプロフィール情報を更新してください。</p>
         </div>
-        <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
-          ダッシュボードへ戻る
-        </Link>
       </div>
 
       <div className="app-card p-8">

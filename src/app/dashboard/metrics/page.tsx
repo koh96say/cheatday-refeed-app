@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createSupabaseServerComponentClient } from '@/lib/supabase/server'
 import { ensureUserRecords } from '@/lib/auth/ensureUser'
@@ -72,19 +71,14 @@ export default async function MetricsPage({ searchParams }: MetricsPageProps) {
             体重・安静時心拍数・体温は毎日入力。過去データを編集する場合は日付を変更して再保存してください。
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          {editingExistingMetric && (
-            <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium text-white">
-              編集対象: {formatDateLabel(selectedDate)}
-            </span>
-          )}
-          <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
-            ダッシュボードへ戻る
-          </Link>
-        </div>
+        {editingExistingMetric && (
+          <span className="rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-medium text-white">
+            編集対象: {formatDateLabel(selectedDate)}
+          </span>
+        )}
       </div>
 
-  <div className="app-card p-8">
+      <div className="app-card mt-6 p-8">
         <MetricsForm
           latestMetric={latestMetrics ?? null}
           defaultMetric={selectedMetric ?? null}

@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
-import Link from 'next/link'
 import { createSupabaseServerComponentClient } from '@/lib/supabase/server'
 import { ensureUserRecords } from '@/lib/auth/ensureUser'
+import { RefeedExecutionToggle } from '@/components/dashboard/RefeedExecutionToggle'
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' }).format(
@@ -30,17 +30,10 @@ export default async function RecommendationsPage() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-5xl flex-col gap-8 px-6 pb-16 pt-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-muted">History</p>
-          <h1 className="mt-2 text-2xl font-semibold text-white">リフィード提案履歴</h1>
-          <p className="mt-2 text-sm text-muted">
-            RRSが0.65以上となった日に生成された提案の一覧です。推奨PFCバランスと期間を振り返りましょう。
-          </p>
-        </div>
-        <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
-          ダッシュボードへ戻る
-        </Link>
+      <div>
+        <p className="text-xs uppercase tracking-[0.35em] text-muted">Recommendations</p>
+        <h1 className="mt-2 text-2xl font-semibold text-white">リフィード提案履歴</h1>
+        <p className="mt-2 text-sm text-muted">リフィード提案が発生したタイミングとその根拠を振り返れます。</p>
       </div>
 
       <div className="app-card p-8">
@@ -49,6 +42,7 @@ export default async function RecommendationsPage() {
             <table className="app-table">
               <thead>
                 <tr>
+                  <th>実施状況</th>
                   <th>日付</th>
                   <th>カロリー (kcal)</th>
                   <th>炭水化物 (g)</th>
@@ -60,6 +54,12 @@ export default async function RecommendationsPage() {
               <tbody className="divide-y divide-white/5">
                 {recommendations.map((item) => (
                   <tr key={item.id} className="hover:bg-white/5">
+                    <td>
+                      <RefeedExecutionToggle
+                        recommendationId={item.id}
+                        initialExecuted={Boolean(item.executed)}
+                      />
+                    </td>
                     <td>{formatDate(item.date)}</td>
                     <td>{item.kcal_total ?? '--'}</td>
                     <td>{item.carb_g ?? '--'}</td>

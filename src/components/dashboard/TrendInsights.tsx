@@ -1,6 +1,5 @@
 'use client'
 
-import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { MetricDaily, Score } from '@/types'
 
@@ -469,7 +468,7 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Trends</p>
           <h1 className="mt-2 text-2xl font-semibold text-white">トレンド分析</h1>
@@ -477,9 +476,6 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
             選択した期間内のメトリクスとスコアの推移を可視化します。リフィード判断のヒントになる変化を確認しましょう。
           </p>
         </div>
-        <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
-          ダッシュボードへ戻る
-        </Link>
       </div>
 
       <section className="app-card p-6">
