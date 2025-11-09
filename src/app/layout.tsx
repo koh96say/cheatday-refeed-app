@@ -21,11 +21,11 @@ export default function RootLayout({
             <div className="absolute inset-0 bg-grid [background-size:32px_32px]" />
             <div className="absolute inset-0 bg-radial-glow" />
           </div>
-          <div className="relative z-10 min-h-screen pb-36">
+          <div className="relative z-10 flex min-h-screen flex-col">
             <BackButtonHeader />
-            {children}
+            <main className="flex-1">{children}</main>
+            <FooterNav />
           </div>
-          <FooterNav />
         </div>
       </body>
     </html>

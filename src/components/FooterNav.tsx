@@ -63,6 +63,8 @@ const CENTER_BUTTON = {
   href: '/dashboard/metrics',
 }
 
+const FOOTER_HEIGHT = 96
+
 export function FooterNav() {
   const pathname = usePathname()
 
@@ -71,60 +73,66 @@ export function FooterNav() {
   }
 
   return (
-    <nav className="pointer-events-none fixed inset-x-0 bottom-4 z-40 flex justify-center">
-      <div className="pointer-events-auto flex w-[min(640px,90vw)] items-end justify-between rounded-3xl border border-white/10 bg-surface/95 px-4 py-3 shadow-card backdrop-blur">
-        <div className="flex flex-1 items-center justify-between gap-3">
-          {NAV_ITEMS.slice(0, 2).map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium transition ${
-                  isActive ? 'text-white' : 'text-muted hover:text-white'
-                }`}
-                aria-label={item.label}
-              >
-                <span className="text-lg" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
+    <>
+      <div style={{ height: FOOTER_HEIGHT }} aria-hidden />
+      <footer
+        className="fixed inset-x-0 bottom-0 z-40 flex justify-center"
+        style={{ height: FOOTER_HEIGHT }}
+      >
+        <nav className="mx-auto flex w-[min(640px,90vw)] items-end justify-between rounded-3xl border border-white/12 bg-surface/95 px-4 py-3 shadow-card backdrop-blur">
+          <div className="flex flex-1 items-center justify-between gap-3">
+            {NAV_ITEMS.slice(0, 2).map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium transition ${
+                    isActive ? 'text-white' : 'text-muted hover:text-white'
+                  }`}
+                  aria-label={item.label}
+                >
+                  <span className="text-lg" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
 
-        <Link
-          href={CENTER_BUTTON.href}
-          className="mx-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-glow transition hover:scale-105"
-          aria-label={CENTER_BUTTON.label}
-        >
-          <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
-            <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
-          </svg>
-        </Link>
+          <Link
+            href={CENTER_BUTTON.href}
+            className="mx-3 flex h-14 w-14 items-center justify-center rounded-full bg-accent text-white shadow-glow transition hover:scale-105"
+            aria-label={CENTER_BUTTON.label}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true" className="h-8 w-8">
+              <path d="M11 5h2v6h6v2h-6v6h-2v-6H5v-2h6z" fill="currentColor" />
+            </svg>
+          </Link>
 
-        <div className="flex flex-1 items-center justify-between gap-3">
-          {NAV_ITEMS.slice(2).map((item) => {
-            const isActive = pathname === item.href
-            return (
-              <Link
-                key={item.key}
-                href={item.href}
-                className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium transition ${
-                  isActive ? 'text-white' : 'text-muted hover:text-white'
-                }`}
-                aria-label={item.label}
-              >
-                <span className="text-lg" aria-hidden="true">
-                  {item.icon}
-                </span>
-                <span>{item.label}</span>
-              </Link>
-            )
-          })}
-        </div>
-      </div>
-    </nav>
+          <div className="flex flex-1 items-center justify-between gap-3">
+            {NAV_ITEMS.slice(2).map((item) => {
+              const isActive = pathname === item.href
+              return (
+                <Link
+                  key={item.key}
+                  href={item.href}
+                  className={`flex flex-1 flex-col items-center gap-1 rounded-2xl px-2 py-2 text-xs font-medium transition ${
+                    isActive ? 'text-white' : 'text-muted hover:text-white'
+                  }`}
+                  aria-label={item.label}
+                >
+                  <span className="text-lg" aria-hidden="true">
+                    {item.icon}
+                  </span>
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </div>
+        </nav>
+      </footer>
+    </>
   )
 }
