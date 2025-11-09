@@ -243,29 +243,6 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <section className="app-card p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-white">クイックアクション</h2>
-            <p className="mt-1 text-sm text-muted">日次のルーティンと分析にスムーズにアクセスできます。</p>
-          </div>
-          <div className="flex flex-wrap gap-3">
-            <Link href="/dashboard/metrics" className="app-button-primary">
-              メトリクス入力
-            </Link>
-            <Link href="/dashboard/trends" className="app-button-secondary">
-              プログレスを見る
-            </Link>
-            <Link href="/dashboard/recommendations" className="app-button-secondary">
-              提案を確認
-            </Link>
-            <Link href="/dashboard/profile" className="app-button-secondary">
-              プロフィール
-            </Link>
-          </div>
-        </div>
-      </section>
-
       {guardActive && (
         <section className="app-card border-warning/40 bg-warning/10 p-8 text-warning">
           <h3 className="text-lg font-semibold">コンディション警告</h3>
