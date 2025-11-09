@@ -179,6 +179,10 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-10 pb-16">
+      <header>
+        <h1 className="text-2xl font-semibold text-white">チートデイ発見アプリ</h1>
+        <p className="mt-2 text-xs uppercase tracking-[0.35em] text-muted">Metabolic Recovery Companion</p>
+      </header>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-xs uppercase tracking-[0.35em] text-muted">Overview</p>

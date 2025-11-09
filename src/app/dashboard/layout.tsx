@@ -28,17 +28,7 @@ export default async function DashboardLayout({ children }: DashboardLayoutProps
   return (
     <>
       <DashboardNav email={user.email ?? ''} links={navigationLinks} />
-      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col gap-8 px-6 pb-16 pt-8">
-        <div>
-          <form action="/auth/logout" method="post">
-            <button
-              type="submit"
-              className="app-button-secondary border border-white/10 px-4 py-2 text-xs uppercase tracking-wide"
-            >
-              ログアウト
-            </button>
-          </form>
-        </div>
+      <div className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 pb-16 pt-24">
         <main className="flex-1">{children}</main>
       </div>
     </>

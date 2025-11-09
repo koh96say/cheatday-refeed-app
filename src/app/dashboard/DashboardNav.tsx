@@ -49,12 +49,6 @@ export function DashboardNav({ email, links }: DashboardNavProps) {
           open ? 'pointer-events-auto opacity-100' : 'pointer-events-none -translate-y-2 opacity-0'
         }`}
       >
-        <div className="mb-6">
-          <Link href="/dashboard" onClick={closeMenu} className="text-lg font-semibold text-white">
-            チートデイ発見アプリ
-          </Link>
-          <p className="mt-2 text-xs text-muted">Metabolic Recovery Companion</p>
-        </div>
         <div className="space-y-2">
           {links.map((item) => (
             <Link
@@ -67,8 +61,18 @@ export function DashboardNav({ email, links }: DashboardNavProps) {
             </Link>
           ))}
         </div>
-        <div className="mt-6 rounded-2xl border border-white/5 bg-surface-soft/60 px-4 py-3 text-xs text-muted">
-          {email}
+        <div className="mt-6 space-y-3">
+          <div className="rounded-2xl border border-white/5 bg-surface-soft/60 px-4 py-3 text-xs text-muted">
+            {email}
+          </div>
+          <form action="/auth/logout" method="post">
+            <button
+              type="submit"
+              className="app-button-secondary w-full justify-center border border-white/10 px-4 py-3 text-xs uppercase tracking-wide"
+            >
+              ログアウト
+            </button>
+          </form>
         </div>
       </div>
     </>
