@@ -166,28 +166,71 @@ export async function POST(request: Request) {
   const guardFlags = evaluateGuardFlags(metricRecord, metricsHistory)
   const shouldSuppress = shouldSuppressRecommendation(guardFlags)
 
-  const score = calculateScores({
+  const sortedHistory = metricsHistory.slice().sort((a, b) => (a.date < b.date ? -1 : 1))
+  const scoreUpserts: Array<{
+    user_id: string
+    date: string
+    mas: number | null
+    rrs: number | null
+    plateau_flag: boolean
+  }> = []
+
+  const accumulator: typeof sortedHistory = []
+  let rollingLatestWeight: number | null = null
+  let currentScore = null as ReturnType<typeof calculateScores> | null
+
+  for (const metricEntry of sortedHistory) {
+    accumulator.push(metricEntry)
+    if (metricEntry.weight_kg !== null) {
+      rollingLatestWeight = metricEntry.weight_kg
+    }
+
+    if (metricEntry.date < payload.date) {
+      continue
+    }
+
+    const weightForScore =
+      rollingLatestWeight ??
+      accumulator
+        .slice()
+        .reverse()
+        .find((entry) => entry.weight_kg !== null)?.weight_kg ??
+      null
+
+    const scoreResult = calculateScores({
+      metrics: accumulator,
+      estimatedTdee: profile?.estimated_tdee ?? null,
+      bodyWeightKg: weightForScore,
+    })
+
+    scoreUpserts.push({
+      user_id: userRecord.id,
+      date: metricEntry.date,
+      mas: Number(scoreResult.mas.toFixed(3)),
+      rrs: Number(scoreResult.rrs.toFixed(3)),
+      plateau_flag: scoreResult.plateauFlag,
+    })
+
+    if (metricEntry.date === payload.date) {
+      currentScore = scoreResult
+    }
+  }
+
+  if (scoreUpserts.length > 0) {
+    const { error: scoreError } = await supabase.from('scores').upsert(scoreUpserts, {
+      onConflict: 'user_id,date',
+    })
+
+    if (scoreError) {
+      return NextResponse.json({ error: scoreError.message }, { status: 500 })
+    }
+  }
+
+  const score = currentScore ?? calculateScores({
     metrics: metricsHistory,
     estimatedTdee: profile?.estimated_tdee ?? null,
     bodyWeightKg: latestWeight ?? null,
   })
-
-  const { error: scoreError } = await supabase.from('scores').upsert(
-    {
-      user_id: userRecord.id,
-      date: payload.date,
-      mas: Number(score.mas.toFixed(3)),
-      rrs: Number(score.rrs.toFixed(3)),
-      plateau_flag: score.plateauFlag,
-    },
-    {
-      onConflict: 'user_id,date',
-    }
-  )
-
-  if (scoreError) {
-    return NextResponse.json({ error: scoreError.message }, { status: 500 })
-  }
 
   let recommendation = null
 
