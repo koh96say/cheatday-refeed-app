@@ -52,7 +52,7 @@ export default function HowToUsePage() {
         <section className="app-card space-y-6 p-8">
           <h2 className="text-2xl font-semibold text-white">2. 指標の仕組みをざっくり理解する</h2>
           <p className="text-sm text-muted">
-            詳細なロジックは開発者ドキュメント「計算リファレンス」にまとまっていますが、日常的に意識したいポイントは次の通りです。
+            スコアは体温や心拍などの日次データから自動算出されます。細かなアルゴリズムを知らなくても使えるよう設計していますが、日常的に意識したいポイントは次の通りです。
           </p>
           <div className="space-y-6 text-sm leading-relaxed text-gray-200">
             <div>
@@ -75,7 +75,7 @@ export default function HowToUsePage() {
               </p>
             </div>
           </div>
-          <div className="rounded-2xl border border-accent/30 bg-accent/10 p-5 text-sm leading-relaxed text-accent">
+          <div className="rounded-2xl border border-danger/40 bg-danger/15 p-5 text-sm leading-relaxed text-danger">
             これらの指標は標準偏差を用いたZスコアで整えられています。個々の基準値に合わせて自動調整されるため、特別な設定は不要です。
           </div>
         </section>
