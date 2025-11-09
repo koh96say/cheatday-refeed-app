@@ -148,6 +148,7 @@ export interface Database {
           fat_g: number | null
           duration_days: number
           rationale_json: Json | null
+          executed: boolean
         }
         Insert: {
           id?: number
@@ -159,6 +160,7 @@ export interface Database {
           fat_g?: number | null
           duration_days?: number
           rationale_json?: Json | null
+          executed?: boolean
         }
         Update: {
           id?: number
@@ -170,6 +172,7 @@ export interface Database {
           fat_g?: number | null
           duration_days?: number
           rationale_json?: Json | null
+          executed?: boolean
         }
       }
     }
