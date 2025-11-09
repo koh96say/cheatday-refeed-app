@@ -264,26 +264,32 @@ export default async function DashboardPage() {
           <p className="mt-2 text-sm text-muted">
             RRSが閾値を超え、安全ガードレールがクリアされた場合にのみ提案が表示されます。
           </p>
-          <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/60 p-6">
+          <div
+            className={`mt-6 rounded-2xl border p-6 transition ${
+              latestRecommendation && latestScore?.rrs && latestScore.rrs >= 0.65 && !guardActive
+                ? 'border-danger/40 bg-danger/10 text-danger'
+                : 'border-success/40 bg-success/10 text-success'
+            }`}
+          >
             {latestRecommendation && latestScore?.rrs && latestScore.rrs >= 0.65 && !guardActive ? (
-              <div className="space-y-3 text-sm text-gray-200">
+              <div className="space-y-3 text-sm text-danger-foreground">
                 <p className="text-sm font-semibold text-white">
                   推奨実施日: {formatDate(latestRecommendation.date)}
                 </p>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="rounded-xl bg-white/5 p-4">
+                <div className="grid grid-cols-2 gap-3 text-sm text-gray-200">
+                  <div className="rounded-xl bg-white/10 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted">総摂取</p>
                     <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.kcal_total} kcal</p>
                   </div>
-                  <div className="rounded-xl bg-white/5 p-4">
+                  <div className="rounded-xl bg-white/10 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted">炭水化物</p>
                     <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.carb_g} g</p>
                   </div>
-                  <div className="rounded-xl bg-white/5 p-4">
+                  <div className="rounded-xl bg-white/10 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted">たんぱく質</p>
                     <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.protein_g} g</p>
                   </div>
-                  <div className="rounded-xl bg-white/5 p-4">
+                  <div className="rounded-xl bg-white/10 p-4">
                     <p className="text-xs uppercase tracking-wide text-muted">脂質</p>
                     <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.fat_g} g</p>
                   </div>
@@ -293,7 +299,7 @@ export default async function DashboardPage() {
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-muted">
+              <p className="text-sm text-success-foreground">
                 {guardActive
                   ? '体調ガードレールがアクティブのため、リフィード提案を一時停止しています。'
                   : '直近のデータではリフィード推奨条件を満たしていません。日次入力を継続しましょう。'}
