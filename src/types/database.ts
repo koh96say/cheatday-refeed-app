@@ -44,6 +44,29 @@ export interface Database {
           created_at?: string
         }
       }
+      user_profiles: {
+        Row: {
+          user_id: string
+          body_fat_percentage: number | null
+          activity_level: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null
+          estimated_tdee: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          user_id: string
+          body_fat_percentage?: number | null
+          activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null
+          estimated_tdee?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          user_id?: string
+          body_fat_percentage?: number | null
+          activity_level?: 'sedentary' | 'light' | 'moderate' | 'active' | 'very_active' | null
+          estimated_tdee?: number | null
+          updated_at?: string | null
+        }
+      }
       metrics_daily: {
         Row: {
           id: number

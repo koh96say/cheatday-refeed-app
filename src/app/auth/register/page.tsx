@@ -27,45 +27,58 @@ async function syncSession(accessToken: string, refreshToken: string) {
   }
 }
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [feedback, setFeedback] = useState<FeedbackState>(null)
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
     setFeedback(null)
 
+    if (password !== confirmPassword) {
+      setFeedback({
+        type: 'error',
+        text: '確認用パスワードが一致しません。',
+      })
+      setLoading(false)
+      return
+    }
+
     const supabase = createSupabaseBrowserClient()
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       })
 
       if (error) {
         setFeedback({
           type: 'error',
-          text: error.message || 'ログインに失敗しました。入力内容をご確認ください。',
+          text: error.message || '登録に失敗しました。入力内容をご確認ください。',
         })
         return
       }
 
-      if (!data.session) {
-        setFeedback({
-          type: 'error',
-          text: 'セッションを開始できませんでした。もう一度お試しください。',
-        })
+      if (data.session) {
+        await syncSession(data.session.access_token, data.session.refresh_token)
+        router.replace('/dashboard')
+        router.refresh()
         return
       }
 
-      await syncSession(data.session.access_token, data.session.refresh_token)
-      router.replace('/dashboard')
-      router.refresh()
+      setFeedback({
+        type: 'success',
+        text: '確認用メールを送信しました。メール内のリンクからアカウントを有効化してください。',
+      })
     } catch (error) {
       console.error(error)
       setFeedback({
@@ -82,9 +95,9 @@ export default function LoginPage() {
       <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/90 p-10 shadow-2xl">
         <div className="mb-8 text-center text-white">
           <h1 className="text-2xl font-semibold">代謝計算ツール</h1>
-          <p className="mt-2 text-sm text-gray-300">アカウントにログインしてください</p>
+          <p className="mt-2 text-sm text-gray-300">新規アカウントを作成しましょう</p>
         </div>
-        <form className="space-y-6" onSubmit={handleLogin}>
+        <form className="space-y-6" onSubmit={handleRegister}>
           <div className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium text-gray-200">
@@ -110,12 +123,29 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 type="password"
-                autoComplete="current-password"
+                autoComplete="new-password"
                 required
+                minLength={6}
                 className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                placeholder="••••••••"
+                placeholder="8文字以上の安全なパスワード"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-200">
+                パスワード（確認用）
+              </label>
+              <input
+                id="confirmPassword"
+                name="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                required
+                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                placeholder="パスワードを再入力"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
               />
             </div>
           </div>
@@ -126,29 +156,24 @@ export default function LoginPage() {
             </p>
           )}
 
-          <div className="text-right text-xs">
-            <Link href="/auth/reset-password" className="text-blue-300 hover:text-blue-200">
-              パスワードをお忘れですか？
-            </Link>
-          </div>
-
           <button
             type="submit"
             disabled={loading}
             className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-blue-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? 'ログイン処理中...' : 'ログイン'}
+            {loading ? '登録処理中...' : 'アカウントを作成'}
           </button>
         </form>
 
         <p className="mt-8 text-center text-sm text-gray-300">
-          アカウントをお持ちでない方は{' '}
-          <Link href="/auth/register" className="font-semibold text-blue-400 hover:text-blue-300">
-            新規登録
+          すでにアカウントをお持ちの方は{' '}
+          <Link href="/auth/login" className="font-semibold text-blue-400 hover:text-blue-300">
+            ログイン
           </Link>
         </p>
       </div>
     </div>
   )
 }
+
 

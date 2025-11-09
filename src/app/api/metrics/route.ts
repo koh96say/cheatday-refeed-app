@@ -79,6 +79,10 @@ export async function POST(request: Request) {
 
   const userRecord = await ensureUserRecords(supabase, user.id)
 
+  if (!userRecord) {
+    return NextResponse.json({ error: 'User record not found' }, { status: 500 })
+  }
+
   const { data: profile } = await supabase
     .from('user_profiles')
     .select('estimated_tdee')

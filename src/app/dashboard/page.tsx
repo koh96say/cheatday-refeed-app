@@ -77,6 +77,12 @@ export default async function DashboardPage() {
 
   const guardActive = guardFlags.feverLike || guardFlags.acuteWeightGain
 
+  const sortedRecentMetrics = recentMetrics
+    ? recentMetrics
+        .slice()
+        .sort((a, b) => (a.date > b.date ? -1 : 1))
+    : []
+
   const rrsStatus = (() => {
     const value = latestScore?.rrs
     if (value === null || value === undefined) {
@@ -312,20 +318,17 @@ export default async function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {(recentMetrics ?? []).length > 0 ? (
-                    recentMetrics
-                      .slice()
-                      .sort((a, b) => (a.date > b.date ? -1 : 1))
-                      .map((metric) => (
-                        <tr key={metric.date}>
-                          <td className="px-3 py-2 whitespace-nowrap">{formatDate(metric.date)}</td>
-                          <td className="px-3 py-2">{metric.weight_kg ?? '--'}</td>
-                          <td className="px-3 py-2">{metric.rhr_bpm ?? '--'}</td>
-                          <td className="px-3 py-2">{metric.temp_c ?? '--'}</td>
-                          <td className="px-3 py-2">{metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'}</td>
-                          <td className="px-3 py-2">{metric.fatigue_1_5 ?? '--'}</td>
-                        </tr>
-                      ))
+                  {sortedRecentMetrics.length > 0 ? (
+                    sortedRecentMetrics.map((metric) => (
+                      <tr key={metric.date}>
+                        <td className="px-3 py-2 whitespace-nowrap">{formatDate(metric.date)}</td>
+                        <td className="px-3 py-2">{metric.weight_kg ?? '--'}</td>
+                        <td className="px-3 py-2">{metric.rhr_bpm ?? '--'}</td>
+                        <td className="px-3 py-2">{metric.temp_c ?? '--'}</td>
+                        <td className="px-3 py-2">{metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'}</td>
+                        <td className="px-3 py-2">{metric.fatigue_1_5 ?? '--'}</td>
+                      </tr>
+                    ))
                   ) : (
                     <tr>
                       <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-500">

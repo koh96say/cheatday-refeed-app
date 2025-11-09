@@ -2,6 +2,9 @@ import { SupabaseClient } from '@supabase/supabase-js'
 import { Database } from '@/types/database'
 
 type Supabase = SupabaseClient<Database>
+type UserRow = Database['public']['Tables']['users']['Row']
+type UserInsert = Database['public']['Tables']['users']['Insert']
+type UserProfileInsert = Database['public']['Tables']['user_profiles']['Insert']
 
 /**
  * Supabase上にアプリ用のユーザー行を保証するヘルパー。
@@ -11,7 +14,9 @@ export async function ensureUserRecords(
   supabase: Supabase,
   authUid: string,
   defaultTimezone = 'Asia/Tokyo'
-) {
+) : Promise<UserRow> {
+  const supabaseAny = supabase as unknown as SupabaseClient<any>
+
   // 既存ユーザーを確認
   const { data: existingUser, error: selectError } = await supabase
     .from('users')
@@ -23,15 +28,17 @@ export async function ensureUserRecords(
     throw new Error(`Failed to fetch user profile: ${selectError.message}`)
   }
 
-  let userRecord = existingUser
+  let userRecord: UserRow | null = existingUser
 
   if (!userRecord) {
-    const { data, error: insertError } = await supabase
+    const newUser: UserInsert = {
+      auth_uid: authUid,
+      timezone: defaultTimezone,
+    }
+
+    const { data, error: insertError } = await supabaseAny
       .from('users')
-      .insert({
-        auth_uid: authUid,
-        timezone: defaultTimezone,
-      })
+      .insert(newUser)
       .select('*')
       .single()
 
@@ -40,6 +47,10 @@ export async function ensureUserRecords(
     }
 
     userRecord = data
+  }
+
+  if (!userRecord) {
+    throw new Error('User record is unavailable after creation')
   }
 
   // user_profiles の初期化
@@ -54,10 +65,14 @@ export async function ensureUserRecords(
   }
 
   if (!userProfile) {
-    const { error: profileInsertError } = await supabase.from('user_profiles').insert({
+    const newProfile: UserProfileInsert = {
       user_id: userRecord.id,
       activity_level: 'moderate',
-    })
+    }
+
+    const { error: profileInsertError } = await supabaseAny
+      .from('user_profiles')
+      .insert(newProfile)
 
     if (profileInsertError && profileInsertError.code !== '23505') {
       throw new Error(`Failed to create user profile extension: ${profileInsertError.message}`)
