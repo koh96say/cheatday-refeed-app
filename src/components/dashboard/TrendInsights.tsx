@@ -275,7 +275,7 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
     if (!svgRef.current || !chartAvailable || scoreSeries.length === 0) return
     const rect = svgRef.current.getBoundingClientRect()
     const x = event.clientX - rect.left
-    const ratio = Math.min(Math.max(x / CHART_DIMENSIONS.width, 0), 1)
+    const ratio = Math.min(Math.max(x / rect.width, 0), 1)
     const index = Math.round(ratio * (scoreSeries.length - 1))
     setHoverIndex(index)
     setIsScoreHovering(true)
@@ -644,10 +644,7 @@ export function TrendInsights({ metrics, scores }: TrendInsightsProps) {
                           if (!ref) return
                           const rect = ref.getBoundingClientRect()
                           const x = event.clientX - rect.left
-                          const ratio = Math.min(
-                            Math.max(x / METRIC_CHART_DIMENSIONS.width, 0),
-                            1
-                          )
+                          const ratio = Math.min(Math.max(x / rect.width, 0), 1)
                           const index = Math.round(ratio * (dataLength - 1))
                           setMetricHoverIndex((prev) => ({ ...prev, [card.key]: index }))
                           setMetricHovering((prev) => ({ ...prev, [card.key]: true }))
