@@ -63,12 +63,6 @@ export default function HowToUsePage() {
               </p>
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-white">MAS（Metabolic Adaptation Score）</h3>
-              <p>
-                RRSの基礎となる合算値で、体温低下やHRVの悪化、疲労蓄積を重み付きで加味します。数値そのものより、前日比・週次推移の変化を追うイメージです。
-              </p>
-            </div>
-            <div>
               <h3 className="text-lg font-semibold text-white">停滞フラグ（Plateau Flag）</h3>
               <p>
                 体重が1週間ほぼ横ばい、かつ減量率が鈍化している場合に点灯します。RRSが高くなくても、体重が落ちづらい状態を知らせます。

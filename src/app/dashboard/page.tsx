@@ -192,7 +192,7 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <div className="app-card relative overflow-hidden p-8 lg:col-span-2">
           <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${rrsVisual.gradient} opacity-80`} />
           <div className="relative flex flex-col gap-6">
@@ -227,29 +227,6 @@ export default async function DashboardPage() {
               </div>
             )}
           </div>
-        </div>
-
-        <div className="app-card p-8">
-          <p className="text-xs uppercase tracking-[0.35em] text-muted">MAS</p>
-          <div className="mt-4 flex items-end justify-between">
-            <span className="text-5xl font-semibold text-white">
-              {latestScore?.mas ? latestScore.mas.toFixed(2) : '--'}
-            </span>
-            {latestScore ? (
-              <span
-                className={`rounded-full px-3 py-1 text-xs font-medium ${
-                  latestScore.plateau_flag ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'
-                }`}
-              >
-                {latestScore.plateau_flag ? '停滞検出' : '安定'}
-              </span>
-            ) : (
-              <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-muted">データなし</span>
-            )}
-          </div>
-          <p className="mt-4 text-sm leading-relaxed text-muted">
-            直近のメトリクスから代謝適応の度合いを算出。停滞傾向を早期にキャッチします。
-          </p>
         </div>
 
         <div className="app-card p-8">

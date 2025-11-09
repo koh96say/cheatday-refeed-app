@@ -18,7 +18,6 @@ const SCORE_CHART_PADDING_Y = 12
 const METRIC_CHART_PADDING_X = 14
 const METRIC_CHART_PADDING_Y = 10
 const SCORE_COLOR_RRS = '#4C6EF5'
-const SCORE_COLOR_MAS = '#A855F7'
 
 type SparklineOptions = {
   width?: number
@@ -238,14 +237,16 @@ export function TrendInsights({
   }, [sortedScores, rangeStart, rangeEnd])
 
   const scoreSeries = useMemo(
-    () => activeScores.filter((score) => score.rrs !== null && score.mas !== null),
+    () => activeScores.filter((score) => score.rrs !== null),
     [activeScores]
   )
 
   const combinedScoreValues = useMemo(() => {
     const values: number[] = []
     scoreSeries.forEach((score) => {
-      values.push(score.rrs!, score.mas!)
+      if (score.rrs !== null) {
+        values.push(score.rrs)
+      }
     })
     return values
   }, [scoreSeries])
@@ -268,36 +269,15 @@ export function TrendInsights({
     [scoreSeries, chartMin, chartMax]
   )
 
-  const masLine = useMemo(
-    () =>
-      scoreSeries.length
-        ? createSparklineData(scoreSeries.map((score) => score.mas), {
-            width: CHART_DIMENSIONS.width,
-            height: CHART_DIMENSIONS.height,
-            min: chartMin,
-            max: chartMax,
-            paddingX: SCORE_CHART_PADDING_X,
-            paddingY: SCORE_CHART_PADDING_Y,
-          })
-        : null,
-    [scoreSeries, chartMin, chartMax]
-  )
-
-  const chartAvailable = Boolean(rrsLine && masLine && scoreSeries.length >= 2)
+  const chartAvailable = Boolean(rrsLine && scoreSeries.length >= 2)
   const fallbackScore = scoreSeries.length ? scoreSeries[scoreSeries.length - 1] : null
   const activeHoverIndex = isScoreHovering ? hoverIndex : null
   const hoveredScore = activeHoverIndex !== null ? scoreSeries[activeHoverIndex] : null
   const summaryScore = hoveredScore ?? fallbackScore
   const hoveredRrsPoint =
     activeHoverIndex !== null && rrsLine ? rrsLine.points[activeHoverIndex] : undefined
-  const hoveredMasPoint =
-    activeHoverIndex !== null && masLine ? masLine.points[activeHoverIndex] : undefined
   const tooltipLeftPercent =
-    hoveredRrsPoint?.x !== undefined
-      ? (hoveredRrsPoint.x / CHART_DIMENSIONS.width) * 100
-      : hoveredMasPoint?.x !== undefined
-        ? (hoveredMasPoint.x / CHART_DIMENSIONS.width) * 100
-        : 0
+    hoveredRrsPoint?.x !== undefined ? (hoveredRrsPoint.x / CHART_DIMENSIONS.width) * 100 : 0
 
   const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
     if (!svgRef.current || !chartAvailable || scoreSeries.length === 0) return
@@ -563,7 +543,7 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
       <section className="app-card p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-white">RRS & MAS 推移</h2>
+            <h2 className="text-lg font-semibold text-white">RRS 推移</h2>
             <p className="mt-1 text-xs text-muted">
               直近のスコア推移を可視化。カーソルを合わせると日付ごとの値を確認できます。
             </p>
@@ -572,10 +552,6 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
             <span className="flex items-center gap-2">
               <span className="h-2 w-2 rounded-full" style={{ backgroundColor: SCORE_COLOR_RRS }} />
               RRS
-            </span>
-            <span className="flex items-center gap-2">
-              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: SCORE_COLOR_MAS }} />
-              MAS
             </span>
           </div>
         </div>
@@ -633,33 +609,12 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                 </>
               )}
 
-              {masLine && (
-                <path
-                  d={masLine.linePath}
-                  fill="none"
-                  stroke={SCORE_COLOR_MAS}
-                  strokeWidth={2.5}
-                  strokeDasharray="6 4"
-                />
-              )}
-
               {activeHoverIndex !== null && hoveredRrsPoint && (
                 <circle
                   cx={hoveredRrsPoint.x}
                   cy={hoveredRrsPoint.y}
                   r={4.5}
                   fill={SCORE_COLOR_RRS}
-                  stroke="#FFFFFF"
-                  strokeWidth={1.5}
-                />
-              )}
-
-              {activeHoverIndex !== null && hoveredMasPoint && (
-                <circle
-                  cx={hoveredMasPoint.x}
-                  cy={hoveredMasPoint.y}
-                  r={4.5}
-                  fill={SCORE_COLOR_MAS}
                   stroke="#FFFFFF"
                   strokeWidth={1.5}
                 />
@@ -679,13 +634,6 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                   </span>
                   <span>{hoveredScore.rrs?.toFixed(2)}</span>
                 </p>
-                <p className="mt-1 flex items-center justify-between text-white">
-                  <span className="flex items-center gap-2">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: SCORE_COLOR_MAS }} />
-                    MAS
-                  </span>
-                  <span>{hoveredScore.mas?.toFixed(2)}</span>
-                </p>
               </div>
             )}
 
@@ -696,22 +644,16 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
           </div>
         ) : (
           <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/60 p-6 text-center text-sm text-muted">
-            RRSとMASのデータが十分ではありません。日次のメトリクスを入力してスコアを蓄積しましょう。
+            RRSのデータが十分ではありません。日次のメトリクスを入力してスコアを蓄積しましょう。
           </div>
         )}
 
         {summaryScore && (
-          <div className="mt-4 grid grid-cols-2 gap-4 text-sm text-muted">
+          <div className="mt-4 grid grid-cols-1 gap-4 text-sm text-muted">
             <div>
               RRS:{' '}
               <span className="font-semibold text-white">
                 {summaryScore.rrs !== null ? summaryScore.rrs.toFixed(2) : '--'}
-              </span>
-            </div>
-            <div>
-              MAS:{' '}
-              <span className="font-semibold text-white">
-                {summaryScore.mas !== null ? summaryScore.mas.toFixed(2) : '--'}
               </span>
             </div>
           </div>
@@ -883,7 +825,6 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                   <tr>
                     <th>日付</th>
                     <th>RRS</th>
-                    <th>MAS</th>
                     <th>停滞</th>
                   </tr>
                 </thead>
@@ -892,7 +833,6 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                     <tr key={score.date} className="hover:bg-white/5">
                       <td>{toDateLabel(score.date)}</td>
                       <td>{score.rrs !== null ? score.rrs.toFixed(2) : '--'}</td>
-                      <td>{score.mas !== null ? score.mas.toFixed(2) : '--'}</td>
                       <td>
                         {score.plateau_flag ? (
                           <span className="rounded-full bg-danger/10 px-3 py-1 text-xs font-medium text-danger">

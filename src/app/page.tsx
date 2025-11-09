@@ -96,7 +96,7 @@ export default async function HomePage() {
             },
             {
               title: '代謝停滞の検知',
-              body: 'RRSとMASが停滞兆候を捉え、ガードレールが安全性を担保。リフィードのベストタイミングを逃しません。',
+              body: 'RRSが停滞兆候を捉え、ガードレールが安全性を担保。リフィードのベストタイミングを逃しません。',
             },
             {
               title: 'PFCバランス提案',
