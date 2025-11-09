@@ -18,19 +18,6 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'diary',
-    label: 'ダイアリー',
-    href: '/dashboard/metrics',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
-        <path
-          d="M6 3h12a2 2 0 0 1 2 2v14a1 1 0 0 1-1 1H6a3 3 0 0 1-3-3V6a3 3 0 0 1 3-3zm0 16h11V5H6a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1zm3-10h5v2H9zm0 4h7v2H9z"
-          fill="currentColor"
-        />
-      </svg>
-    ),
-  },
-  {
     key: 'progress',
     label: 'プログレス',
     href: '/dashboard/trends',
@@ -44,13 +31,26 @@ const NAV_ITEMS = [
     ),
   },
   {
-    key: 'more',
+    key: 'recommendations',
     label: '提案履歴',
     href: '/dashboard/recommendations',
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
         <path
           d="M9 3h6l1 2h3a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h3zm-1 4v11h8V7zm2 3h4v2h-4zm0 3h3v2h-3z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  },
+  {
+    key: 'profile',
+    label: 'プロフィール',
+    href: '/dashboard/profile',
+    icon: (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
+        <path
+          d="M12 2a5 5 0 1 1-5 5 5 5 0 0 1 5-5zm0 12c4.42 0 8 1.79 8 4v1H4v-1c0-2.21 3.58-4 8-4z"
           fill="currentColor"
         />
       </svg>
