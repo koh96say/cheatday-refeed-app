@@ -172,21 +172,21 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      <div className="rounded-md bg-gray-50 p-4 text-sm text-gray-600">
-        ログインメール: <span className="font-semibold">{authUserEmail}</span>
+    <form className="space-y-8" onSubmit={handleSubmit}>
+      <div className="rounded-2xl border border-white/10 bg-surface-soft/80 p-5 text-sm text-muted">
+        ログインメール: <span className="font-semibold text-white">{authUserEmail}</span>
       </div>
 
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="gender" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="gender" className="app-label">
             性別
           </label>
           <select
             id="gender"
             value={gender ?? ''}
             onChange={(event) => setGender(event.target.value ? (event.target.value as typeof gender) : null)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           >
             <option value="">未選択</option>
             <option value="male">男性</option>
@@ -196,7 +196,7 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
         </div>
 
         <div>
-          <label htmlFor="birth_year" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="birth_year" className="app-label">
             生年 (西暦)
           </label>
           <input
@@ -206,12 +206,12 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             max={new Date().getFullYear()}
             value={birthYear}
             onChange={(event) => setBirthYear(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="height" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="height" className="app-label">
             身長 (cm)
           </label>
           <input
@@ -222,12 +222,12 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             max="220"
             value={height}
             onChange={(event) => setHeight(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="goal_weight" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="goal_weight" className="app-label">
             目標体重 (kg)
           </label>
           <input
@@ -238,12 +238,12 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             max="200"
             value={goalWeight}
             onChange={(event) => setGoalWeight(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="timezone" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="timezone" className="app-label">
             タイムゾーン
           </label>
           <input
@@ -252,12 +252,12 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             value={timezone}
             onChange={(event) => setTimezone(event.target.value)}
             placeholder="Asia/Tokyo"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="activity_level" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="activity_level" className="app-label">
             活動レベル
           </label>
           <select
@@ -266,7 +266,7 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             onChange={(event) =>
               setActivityLevel(event.target.value ? (event.target.value as typeof activityLevel) : 'moderate')
             }
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           >
             {Object.entries(ACTIVITY_LEVEL_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
@@ -277,7 +277,7 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
         </div>
 
         <div>
-          <label htmlFor="body_fat" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="body_fat" className="app-label">
             体脂肪率 (%)
           </label>
           <input
@@ -288,15 +288,15 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
             max="70"
             value={bodyFat}
             onChange={(event) => setBodyFat(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="estimated_tdee" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="estimated_tdee" className="app-label">
             推定TDEE (kcal)
           </label>
-          <div className="mt-1 flex rounded-md shadow-sm">
+          <div className="mt-2 flex overflow-hidden rounded-xl border border-white/10 bg-white/5">
             <input
               id="estimated_tdee"
               type="number"
@@ -305,17 +305,17 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
               max="5000"
               value={tdee}
               onChange={(event) => setTdee(event.target.value)}
-              className="flex-1 rounded-l-md border border-gray-300 px-3 py-2 focus:border-indigo-500 focus:ring-indigo-500"
+              className="flex-1 bg-transparent px-4 py-3 text-sm text-white placeholder:text-muted focus:outline-none focus:ring-2 focus:ring-accent/40"
             />
             <button
               type="button"
               onClick={handleAutoTdee}
-              className="inline-flex items-center rounded-r-md border border-l-0 border-gray-300 px-3 text-sm text-gray-600 hover:bg-gray-50"
+              className="app-button-secondary h-full rounded-none border-l border-white/10 px-4 text-xs uppercase tracking-wide"
             >
               自動計算
             </button>
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-2 text-xs text-muted">
             Mifflin-St Jeor方程式をベースに活動係数を掛けた推定値です。
           </p>
         </div>
@@ -323,8 +323,8 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
 
       {message && (
         <div
-          className={`rounded-md p-4 text-sm ${
-            isError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+          className={`rounded-2xl border p-4 text-sm ${
+            isError ? 'border-danger/40 bg-danger/10 text-danger' : 'border-success/40 bg-success/10 text-success'
           }`}
         >
           {message}
@@ -335,7 +335,7 @@ export default function ProfileForm({ authUserEmail, userId, userInfo, profile }
         <button
           type="submit"
           disabled={isSaving || isPending}
-          className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-button-primary px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSaving || isPending ? '保存中...' : 'プロフィールを保存'}
         </button>

@@ -86,12 +86,12 @@ export default async function DashboardPage() {
   const rrsStatus = (() => {
     const value = latestScore?.rrs
     if (value === null || value === undefined) {
-      return { label: 'データなし', color: 'text-gray-500', description: '日次データを入力してください。' }
+      return { label: 'データなし', tone: 'muted', description: '日次データを入力してください。' }
     }
     if (value >= 0.65) {
       return {
         label: guardActive ? '推奨保留中' : 'リフィード推奨',
-        color: guardActive ? 'text-yellow-600' : 'text-green-600',
+        tone: guardActive ? 'warning' : 'success',
         description: guardActive
           ? '体調ガードレールが発動中です。回復を優先し、メトリクスを継続記録してください。'
           : '代謝回復のため、炭水化物中心のリフィードを検討してください。',
@@ -100,248 +100,293 @@ export default async function DashboardPage() {
     if (value >= 0.5) {
       return {
         label: '注意喚起',
-        color: 'text-yellow-600',
+        tone: 'warning',
         description: '停滞兆候を監視しましょう。明日のデータも入力してください。',
       }
     }
     return {
       label: '継続中',
-      color: 'text-gray-600',
+      tone: 'muted',
       description: '引き続き日次データを記録し、コンディションを維持しましょう。',
     }
   })()
 
+  type RrsCta = {
+    href: string
+    label: string
+    variant: 'primary' | 'secondary'
+  }
+
+  const rrsVisual = (() => {
+    const mutedBase = (headline: string): { gradient: string; badge: string; ctas: RrsCta[]; headline: string } => ({
+      gradient: 'from-white/15 via-white/5 to-transparent',
+      badge: 'border-white/20 bg-white/10 text-muted',
+      headline,
+      ctas: [
+        { href: '/dashboard/metrics', label: '今日のデータを記録', variant: 'primary' },
+        { href: '/how-to-use', label: '記録のコツを確認', variant: 'secondary' },
+      ],
+    })
+
+    if (rrsStatus.tone === 'success') {
+      if (guardActive || rrsStatus.label === '推奨保留中') {
+        return {
+          gradient: 'from-warning/30 via-warning/5 to-transparent',
+          badge: 'border-warning/60 bg-warning/20 text-white',
+          headline: '体調の回復を最優先に',
+          ctas: [
+            { href: '/dashboard/metrics', label: '最新メトリクスを更新', variant: 'primary' },
+            { href: '/dashboard/trends', label: 'コンディション推移を見る', variant: 'secondary' },
+          ],
+        }
+      }
+
+      return {
+        gradient: 'from-success/35 via-success/10 to-transparent',
+        badge: 'border-success/60 bg-success/20 text-white',
+        headline: 'リフィードを実施するタイミングです',
+        ctas: [
+          { href: '/dashboard/recommendations', label: 'リフィード提案を見る', variant: 'primary' },
+          { href: '/dashboard/metrics', label: '最新メトリクスを振り返る', variant: 'secondary' },
+        ],
+      }
+    }
+
+    if (rrsStatus.tone === 'warning') {
+      return {
+        gradient: 'from-warning/30 via-warning/10 to-transparent',
+        badge: 'border-warning/60 bg-warning/20 text-white',
+        headline: '停滞の兆候を注視しましょう',
+        ctas: [
+          { href: '/dashboard/metrics', label: 'メトリクスを入力', variant: 'primary' },
+          { href: '/dashboard/trends', label: 'トレンドを確認', variant: 'secondary' },
+        ],
+      }
+    }
+
+    if (rrsStatus.label === '継続中') {
+      return {
+        ...mutedBase('コンディションは安定しています'),
+        ctas: [
+          { href: '/dashboard/metrics', label: '今日のデータを記録', variant: 'primary' },
+          { href: '/dashboard/trends', label: '過去14日をチェック', variant: 'secondary' },
+        ],
+      }
+    }
+
+    return mutedBase('日次データを入力して状態を確認しましょう')
+  })()
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <nav className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold">チートデイ発見アプリ</h1>
+    <div className="space-y-10 pb-16">
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">Overview</p>
+        </div>
+        <Link href="/how-to-use" className="app-button-secondary text-xs uppercase tracking-wide">
+          使い方ガイド
+        </Link>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="app-card relative overflow-hidden p-8 lg:col-span-2">
+          <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${rrsVisual.gradient} opacity-80`} />
+          <div className="relative flex flex-col gap-6">
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <span
+                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.3em] ${rrsVisual.badge}`}
+              >
+                {rrsStatus.label}
+              </span>
+              <div className="text-right">
+                <p className="text-xs uppercase tracking-[0.3em] text-white/70">RRS</p>
+                <p className="text-4xl font-semibold text-white">
+                  {latestScore?.rrs ? latestScore.rrs.toFixed(2) : '--'}
+                </p>
+              </div>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600">{user.email}</span>
-              <form action="/auth/logout" method="post">
-                <button
-                  type="submit"
-                  className="text-sm text-indigo-600 hover:text-indigo-800"
-                >
-                  ログアウト
-                </button>
-              </form>
+            <div>
+              <h2 className="text-2xl font-semibold text-white">{rrsVisual.headline}</h2>
+              <p className="mt-2 text-sm leading-relaxed text-white/80">{rrsStatus.description}</p>
             </div>
+            {rrsVisual.ctas.length > 0 && (
+              <div className="flex flex-wrap gap-3">
+                {rrsVisual.ctas.map((cta) => (
+                  <Link
+                    key={`${cta.href}-${cta.label}`}
+                    href={cta.href}
+                    className={cta.variant === 'primary' ? 'app-button-primary' : 'app-button-secondary'}
+                  >
+                    {cta.label}
+                  </Link>
+                ))}
+              </div>
+            )}
           </div>
         </div>
-      </nav>
 
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="mb-4">
-            <Link
-              href="/how-to-use"
-              className="inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-800"
-            >
-              このアプリの使い方について
+        <div className="app-card p-8">
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">MAS</p>
+          <div className="mt-4 flex items-end justify-between">
+            <span className="text-5xl font-semibold text-white">
+              {latestScore?.mas ? latestScore.mas.toFixed(2) : '--'}
+            </span>
+            {latestScore ? (
+              <span
+                className={`rounded-full px-3 py-1 text-xs font-medium ${
+                  latestScore.plateau_flag ? 'bg-danger/10 text-danger' : 'bg-success/10 text-success'
+                }`}
+              >
+                {latestScore.plateau_flag ? '停滞検出' : '安定'}
+              </span>
+            ) : (
+              <span className="rounded-full bg-white/5 px-3 py-1 text-xs text-muted">データなし</span>
+            )}
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-muted">
+            直近のメトリクスから代謝適応の度合いを算出。停滞傾向を早期にキャッチします。
+          </p>
+        </div>
+
+        <div className="app-card p-8">
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">最新体重</p>
+          <div className="mt-4 flex items-end justify-between">
+            <span className="text-5xl font-semibold text-white">
+              {latestMetrics?.weight_kg ? `${latestMetrics.weight_kg.toFixed(1)}kg` : '--'}
+            </span>
+            <span className="text-xs text-muted">{latestMetrics?.date ? formatDate(latestMetrics.date) : '未入力'}</span>
+          </div>
+          <p className="mt-4 text-sm leading-relaxed text-muted">
+            安静時指標とセットで入力すると、RRSの精度がさらに高まりリフィード判断に役立ちます。
+          </p>
+        </div>
+      </div>
+
+      <section className="app-card p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-white">クイックアクション</h2>
+            <p className="mt-1 text-sm text-muted">日次のルーティンと分析にスムーズにアクセスできます。</p>
+          </div>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/dashboard/metrics" className="app-button-primary">
+              メトリクス入力
+            </Link>
+            <Link href="/dashboard/trends" className="app-button-secondary">
+              トレンドを見る
+            </Link>
+            <Link href="/dashboard/recommendations" className="app-button-secondary">
+              提案を確認
+            </Link>
+            <Link href="/dashboard/profile" className="app-button-secondary">
+              プロフィール
             </Link>
           </div>
-          <div className="mb-8">
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">ダッシュボード</h2>
-            <p className="text-gray-600">今日のリフィード準備スコアとメトリクスを確認</p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-            {/* リフィード準備スコア */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-3xl font-bold text-indigo-600">
-                      {latestScore?.rrs ? latestScore.rrs.toFixed(1) : '--'}
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        リフィード準備スコア (RRS)
-                      </dt>
-                      <dd className="text-sm text-gray-900">
-                        <span className={rrsStatus.color}>{rrsStatus.label}</span>
-                      </dd>
-                      <dd className="mt-1 text-xs text-gray-500">{rrsStatus.description}</dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 代謝適応スコア */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-3xl font-bold text-purple-600">
-                      {latestScore?.mas ? latestScore.mas.toFixed(1) : '--'}
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        代謝適応スコア (MAS)
-                      </dt>
-                      <dd className="text-sm text-gray-900">
-                        {latestScore?.plateau_flag ? (
-                          <span className="text-red-600">停滞検出</span>
-                        ) : (
-                          <span className="text-gray-600">正常</span>
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 最新の体重 */}
-            <div className="bg-white overflow-hidden shadow rounded-lg">
-              <div className="p-5">
-                <div className="flex items-center">
-                  <div className="flex-shrink-0">
-                    <div className="text-3xl font-bold text-blue-600">
-                      {latestMetrics?.weight_kg ? `${latestMetrics.weight_kg}kg` : '--'}
-                    </div>
-                  </div>
-                  <div className="ml-5 w-0 flex-1">
-                    <dl>
-                      <dt className="text-sm font-medium text-gray-500 truncate">
-                        最新の体重
-                      </dt>
-                      <dd className="text-sm text-gray-900">
-                        {latestMetrics?.date ? (
-                          formatDate(latestMetrics.date)
-                        ) : (
-                          <span className="text-gray-400">データなし</span>
-                        )}
-                      </dd>
-                    </dl>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* アクションボタン */}
-          <div className="mt-8">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-4">クイックアクション</h3>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                <Link
-                  href="/dashboard/metrics"
-                  className="block px-4 py-3 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  メトリクスを入力
-                </Link>
-                <Link
-                  href="/dashboard/trends"
-                  className="block px-4 py-3 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  トレンドを確認
-                </Link>
-                <Link
-                  href="/dashboard/recommendations"
-                  className="block px-4 py-3 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  リフィード提案を確認
-                </Link>
-                <Link
-                  href="/dashboard/profile"
-                  className="block px-4 py-3 border border-gray-300 rounded-md text-center text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  プロフィールを更新
-                </Link>
-              </div>
-            </div>
-          </div>
-
-          {guardActive && (
-            <div className="mt-6">
-              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4 text-sm text-yellow-800">
-                <p className="font-semibold mb-1">コンディション警告</p>
-                <ul className="list-disc list-inside space-y-1">
-                  {guardFlags.feverLike && <li>発熱の兆候が検知されました。リフィード提案を一時保留します。</li>}
-                  {guardFlags.acuteWeightGain && (
-                    <li>直近3日で体重が急増しています。水分やむくみを確認し、休養を優先してください。</li>
-                  )}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          {/* 最新のリフィード提案 */}
-          <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-            <div className="bg-white shadow rounded-lg p-6">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">リフィード提案</h3>
-              {latestRecommendation && latestScore?.rrs && latestScore.rrs >= 0.65 && !guardActive ? (
-                <div className="space-y-2 text-sm text-gray-700">
-                  <p className="font-semibold text-indigo-600">
-                    {formatDate(latestRecommendation.date)} にリフィードを実施しましょう
-                  </p>
-                  <ul className="space-y-1">
-                    <li>総摂取カロリー: {latestRecommendation.kcal_total} kcal</li>
-                    <li>炭水化物: {latestRecommendation.carb_g} g</li>
-                    <li>たんぱく質: {latestRecommendation.protein_g} g</li>
-                    <li>脂質: {latestRecommendation.fat_g} g</li>
-                  </ul>
-                  <p className="text-xs text-gray-500">
-                    追加エネルギーの約80%を炭水化物に割り当て、代謝のリセットを狙います。
-                  </p>
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500">
-                  {guardActive
-                    ? '体調ガードレールがアクティブのため、リフィード提案を一時停止しています。'
-                    : '直近のデータではリフィード推奨条件を満たしていません。引き続きデータを記録しましょう。'}
-                </p>
-              )}
-            </div>
-
-            <div className="bg-white shadow rounded-lg p-6 overflow-x-auto">
-              <h3 className="text-lg font-medium text-gray-900 mb-2">直近のメトリクス</h3>
-              <table className="min-w-full divide-y divide-gray-200 text-sm">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">日付</th>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">体重(kg)</th>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">RHR(bpm)</th>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">体温(℃)</th>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">睡眠(h)</th>
-                    <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">疲労(1-5)</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {sortedRecentMetrics.length > 0 ? (
-                    sortedRecentMetrics.map((metric) => (
-                      <tr key={metric.date}>
-                        <td className="px-3 py-2 whitespace-nowrap">{formatDate(metric.date)}</td>
-                        <td className="px-3 py-2">{metric.weight_kg ?? '--'}</td>
-                        <td className="px-3 py-2">{metric.rhr_bpm ?? '--'}</td>
-                        <td className="px-3 py-2">{metric.temp_c ?? '--'}</td>
-                        <td className="px-3 py-2">{metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'}</td>
-                        <td className="px-3 py-2">{metric.fatigue_1_5 ?? '--'}</td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={6} className="px-3 py-4 text-center text-sm text-gray-500">
-                        直近7日間のデータがありません。メトリクスを入力してください。
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
-      </main>
+      </section>
+
+      {guardActive && (
+        <section className="app-card border-warning/40 bg-warning/10 p-8 text-warning">
+          <h3 className="text-lg font-semibold">コンディション警告</h3>
+          <p className="mt-2 text-sm text-warning/90">
+            リフィード提案を一時停止しています。体調回復を優先し、必要に応じて医療専門家に相談してください。
+          </p>
+          <ul className="mt-4 space-y-2 text-sm text-warning">
+            {guardFlags.feverLike && <li>・発熱の兆候が検知されました。十分な休息を取りましょう。</li>}
+            {guardFlags.acuteWeightGain && (
+              <li>・直近3日で体重が急増しています。水分・塩分バランスや睡眠を見直してください。</li>
+            )}
+          </ul>
+        </section>
+      )}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <section className="app-card p-8">
+          <h3 className="text-lg font-semibold text-white">リフィード提案</h3>
+          <p className="mt-2 text-sm text-muted">
+            RRSが閾値を超え、安全ガードレールがクリアされた場合にのみ提案が表示されます。
+          </p>
+          <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/60 p-6">
+            {latestRecommendation && latestScore?.rrs && latestScore.rrs >= 0.65 && !guardActive ? (
+              <div className="space-y-3 text-sm text-gray-200">
+                <p className="text-sm font-semibold text-white">
+                  推奨実施日: {formatDate(latestRecommendation.date)}
+                </p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted">総摂取</p>
+                    <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.kcal_total} kcal</p>
+                  </div>
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted">炭水化物</p>
+                    <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.carb_g} g</p>
+                  </div>
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted">たんぱく質</p>
+                    <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.protein_g} g</p>
+                  </div>
+                  <div className="rounded-xl bg-white/5 p-4">
+                    <p className="text-xs uppercase tracking-wide text-muted">脂質</p>
+                    <p className="mt-2 text-xl font-semibold text-white">{latestRecommendation.fat_g} g</p>
+                  </div>
+                </div>
+                <p className="text-xs text-muted">
+                  追加エネルギーの約80%を炭水化物に割り当て、甲状腺ホルモンとレプチンの回復を狙います。
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted">
+                {guardActive
+                  ? '体調ガードレールがアクティブのため、リフィード提案を一時停止しています。'
+                  : '直近のデータではリフィード推奨条件を満たしていません。日次入力を継続しましょう。'}
+              </p>
+            )}
+          </div>
+        </section>
+
+        <section className="app-card p-8">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold text-white">直近のメトリクス</h3>
+            <Link href="/dashboard/metrics" className="text-xs text-accent hover:text-accent-strong">
+              メトリクス入力へ
+            </Link>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            <table className="app-table">
+              <thead>
+                <tr>
+                  <th>日付</th>
+                  <th>体重 (kg)</th>
+                  <th>RHR (bpm)</th>
+                  <th>体温 (℃)</th>
+                  <th>睡眠 (h)</th>
+                  <th>疲労</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {sortedRecentMetrics.length > 0 ? (
+                  sortedRecentMetrics.map((metric) => (
+                    <tr key={metric.date} className="hover:bg-white/5">
+                      <td>{formatDate(metric.date)}</td>
+                      <td>{metric.weight_kg ?? '--'}</td>
+                      <td>{metric.rhr_bpm ?? '--'}</td>
+                      <td>{metric.temp_c ?? '--'}</td>
+                      <td>{metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'}</td>
+                      <td>{metric.fatigue_1_5 ?? '--'}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={6} className="py-8 text-center text-sm text-muted">
+                      直近7日間のデータがありません。メトリクスを入力してください。
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

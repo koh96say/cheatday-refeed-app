@@ -26,21 +26,23 @@ export default async function ProfilePage() {
   ])
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-3xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-sm text-indigo-600 hover:text-indigo-800">
-            ← ダッシュボードに戻る
-          </Link>
-        </div>
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-2">プロフィール設定</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            推定TDEEや身体情報を登録すると、リフィード提案が利用状況に合わせて最適化されます。
+    <div className="mx-auto max-w-3xl space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">Profile</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">プロフィールと代謝設定</h1>
+          <p className="mt-2 text-sm text-muted">
+            推定TDEEや身体情報を更新すると、提案されるカロリー配分があなたのコンディションに合わせて最適化されます。
           </p>
-          <ProfileForm authUserEmail={user.email ?? ''} userId={userRecord.id} userInfo={pii} profile={profile} />
         </div>
-      </main>
+        <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
+          ダッシュボードへ戻る
+        </Link>
+      </div>
+
+      <div className="app-card p-8">
+        <ProfileForm authUserEmail={user.email ?? ''} userId={userRecord.id} userInfo={pii} profile={profile} />
+      </div>
     </div>
   )
 }

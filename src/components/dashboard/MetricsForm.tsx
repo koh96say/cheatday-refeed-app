@@ -110,11 +110,11 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
+    <form className="space-y-8" onSubmit={handleSubmit}>
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
-            日付 <span className="text-red-500">*</span>
+          <label htmlFor="date" className="app-label">
+            日付 <span className="text-danger">*</span>
           </label>
           <input
             id="date"
@@ -123,13 +123,13 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             value={date}
             onChange={(event) => setDate(event.target.value)}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="weight" className="block text-sm font-medium text-gray-700">
-            体重 (kg) <span className="text-red-500">*</span>
+          <label htmlFor="weight" className="app-label">
+            体重 (kg) <span className="text-danger">*</span>
           </label>
           <input
             id="weight"
@@ -140,13 +140,13 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             value={weight}
             onChange={(event) => setWeight(event.target.value)}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="rhr" className="block text-sm font-medium text-gray-700">
-            安静時心拍数 (bpm) <span className="text-red-500">*</span>
+          <label htmlFor="rhr" className="app-label">
+            安静時心拍数 (bpm) <span className="text-danger">*</span>
           </label>
           <input
             id="rhr"
@@ -157,13 +157,13 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             value={rhr}
             onChange={(event) => setRhr(event.target.value)}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="temp" className="block text-sm font-medium text-gray-700">
-            起床時体温 (℃) <span className="text-red-500">*</span>
+          <label htmlFor="temp" className="app-label">
+            起床時体温 (℃) <span className="text-danger">*</span>
           </label>
           <input
             id="temp"
@@ -174,12 +174,12 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             value={temp}
             onChange={(event) => setTemp(event.target.value)}
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="hrv" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="hrv" className="app-label">
             HRV (ms)
           </label>
           <input
@@ -190,12 +190,12 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             max="250"
             value={hrv}
             onChange={(event) => setHrv(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="sleep" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="sleep" className="app-label">
             睡眠時間 (時間)
           </label>
           <input
@@ -206,19 +206,19 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             max="16"
             value={sleepHours}
             onChange={(event) => setSleepHours(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="fatigue" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="fatigue" className="app-label">
             主観疲労 (1-5)
           </label>
           <select
             id="fatigue"
             value={fatigue}
             onChange={(event) => setFatigue(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           >
             <option value="">選択してください</option>
             {[1, 2, 3, 4, 5].map((value) => (
@@ -230,7 +230,7 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
         </div>
 
         <div>
-          <label htmlFor="training_load" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="training_load" className="app-label">
             トレーニング負荷 (TSS/日)
           </label>
           <input
@@ -241,12 +241,12 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             max="800"
             value={trainingLoad}
             onChange={(event) => setTrainingLoad(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="calorie_intake" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="calorie_intake" className="app-label">
             摂取カロリー (kcal)
           </label>
           <input
@@ -257,12 +257,12 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             max="6000"
             value={calorieIntake}
             onChange={(event) => setCalorieIntake(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
 
         <div>
-          <label htmlFor="energy_expenditure" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="energy_expenditure" className="app-label">
             消費推定 (kcal)
           </label>
           <input
@@ -273,13 +273,13 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
             max="6000"
             value={energyExpenditure}
             onChange={(event) => setEnergyExpenditure(event.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            className="app-input mt-2"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+        <label htmlFor="notes" className="app-label">
           メモ
         </label>
         <textarea
@@ -288,25 +288,25 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
           value={notes}
           onChange={(event) => setNotes(event.target.value)}
           maxLength={500}
-          className="mt-1 block w-full rounded-md border border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          className="app-input mt-2"
         />
-        <p className="mt-1 text-xs text-gray-500">※ 500文字まで。補足事項や体調メモに活用してください。</p>
+        <p className="mt-2 text-xs text-muted">※ 500文字まで。補足事項や体調メモに活用してください。</p>
       </div>
 
       {estimatedTdee ? (
-        <div className="rounded-md bg-blue-50 p-4 text-sm text-blue-700">
-          推定TDEE: <span className="font-semibold">{estimatedTdee}</span> kcal
+        <div className="rounded-2xl border border-accent/40 bg-accent/10 p-4 text-sm text-accent">
+          推定TDEE: <span className="font-semibold text-white">{estimatedTdee}</span> kcal
         </div>
       ) : (
-        <div className="rounded-md bg-yellow-50 p-4 text-sm text-yellow-700">
+        <div className="rounded-2xl border border-warning/30 bg-warning/10 p-4 text-sm text-warning">
           プロフィールに推定TDEEを設定すると、カロリー不足日数の推定がより正確になります。
         </div>
       )}
 
       {message && (
         <div
-          className={`rounded-md p-4 text-sm ${
-            isError ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700'
+          className={`rounded-2xl border p-4 text-sm ${
+            isError ? 'border-danger/40 bg-danger/10 text-danger' : 'border-success/40 bg-success/10 text-success'
           }`}
         >
           {message}
@@ -317,7 +317,7 @@ export default function MetricsForm({ latestMetric, defaultMetric, estimatedTdee
         <button
           type="submit"
           disabled={isLoading || isPending}
-          className="inline-flex items-center justify-center rounded-md border border-transparent bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-button-primary px-6 py-3 text-sm disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading || isPending ? '保存中...' : 'メトリクスを保存'}
         </button>

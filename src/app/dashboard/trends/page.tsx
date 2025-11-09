@@ -73,143 +73,155 @@ export default async function TrendsPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-5xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <Link href="/dashboard" className="text-sm text-indigo-600 hover:text-indigo-800">
-            ← ダッシュボードに戻る
-          </Link>
-        </div>
-
-        <div className="bg-white shadow rounded-lg p-6">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-4">トレンド分析</h1>
-          <p className="text-sm text-gray-600 mb-6">
-            直近2週間の平均とその前週を比較し、停滞や回復の兆候を把握します。
+    <div className="mx-auto max-w-5xl space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-xs uppercase tracking-[0.35em] text-muted">Trends</p>
+          <h1 className="mt-2 text-2xl font-semibold text-white">トレンド分析</h1>
+          <p className="mt-2 text-sm text-muted">
+            直近2週間とその前週の平均を比較し、停滞や回復の兆候を把握します。継続的な入力が鍵です。
           </p>
+        </div>
+        <Link href="/dashboard" className="app-button-secondary text-xs uppercase tracking-wide">
+          ダッシュボードへ戻る
+        </Link>
+      </div>
 
-          {metrics && metrics.length >= 4 ? (
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {trendCards.map((card) => {
-                const comparison = compareAverages(metrics, card.key)
-                const lastAvg =
-                  comparison.lastAvg !== null
-                    ? card.transform
-                      ? card.transform(comparison.lastAvg)
-                      : comparison.lastAvg
-                    : null
-                const prevAvg =
-                  comparison.prevAvg !== null
-                    ? card.transform
-                      ? card.transform(comparison.prevAvg)
-                      : comparison.prevAvg
-                    : null
-                const delta =
-                  comparison.delta !== null
-                    ? card.transform
-                      ? card.transform(comparison.delta)
-                      : comparison.delta
-                    : null
+      <div className="app-card p-8">
+        {metrics && metrics.length >= 4 ? (
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {trendCards.map((card) => {
+              const comparison = compareAverages(metrics, card.key)
+              const lastAvg =
+                comparison.lastAvg !== null
+                  ? card.transform
+                    ? card.transform(comparison.lastAvg)
+                    : comparison.lastAvg
+                  : null
+              const prevAvg =
+                comparison.prevAvg !== null
+                  ? card.transform
+                    ? card.transform(comparison.prevAvg)
+                    : comparison.prevAvg
+                  : null
+              const delta =
+                comparison.delta !== null
+                  ? card.transform
+                    ? card.transform(comparison.delta)
+                    : comparison.delta
+                  : null
 
-                const deltaLabel =
-                  delta !== null ? `${delta > 0 ? '+' : ''}${delta.toFixed(card.precision)} ${card.unit}` : '---'
+              const deltaLabel =
+                delta !== null ? `${delta > 0 ? '+' : ''}${delta.toFixed(card.precision)} ${card.unit}` : '---'
 
-                return (
-                  <div key={card.key} className="border border-gray-200 rounded-lg p-4 bg-gray-50">
-                    <h2 className="text-sm font-medium text-gray-500 mb-2">{card.label}</h2>
-                    <p className="text-2xl font-semibold text-gray-900">
-                      {lastAvg !== null ? `${lastAvg.toFixed(card.precision)} ${card.unit}` : '--'}
-                    </p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      前週比: <span className={delta !== null && delta > 0 ? 'text-red-600' : 'text-green-600'}>
-                        {deltaLabel}
-                      </span>
-                    </p>
-                  </div>
-                )
-              })}
+              const deltaClass =
+                delta === null
+                  ? 'text-muted'
+                  : delta > 0
+                    ? card.key === 'weight_kg'
+                      ? 'text-danger'
+                      : 'text-warning'
+                    : 'text-success'
+
+              return (
+                <div key={card.key} className="rounded-2xl border border-white/10 bg-surface-soft/70 p-5 backdrop-blur">
+                  <p className="text-xs uppercase tracking-[0.3em] text-muted">{card.label}</p>
+                  <p className="mt-3 text-3xl font-semibold text-white">
+                    {lastAvg !== null ? `${lastAvg.toFixed(card.precision)} ${card.unit}` : '--'}
+                  </p>
+                  <p className="mt-1 text-xs text-muted">
+                    前週比:{' '}
+                    <span className={`font-semibold ${deltaClass}`}>
+                      {deltaLabel}
+                    </span>
+                  </p>
+                  <p className="mt-2 text-xs text-muted">
+                    過去2週間平均: {prevAvg !== null ? `${prevAvg.toFixed(card.precision)} ${card.unit}` : '--'}
+                  </p>
+                </div>
+              )
+            })}
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
+            トレンドを計算するには最低4日分のデータが必要です。日次の入力を継続しましょう。
+          </div>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        <div className="app-card p-8">
+          <div className="flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-white">スコア履歴</h2>
+            <span className="text-xs text-muted">直近21日</span>
+          </div>
+          {scores && scores.length > 0 ? (
+            <div className="mt-4 overflow-x-auto">
+              <table className="app-table">
+                <thead>
+                  <tr>
+                    <th>日付</th>
+                    <th>RRS</th>
+                    <th>MAS</th>
+                    <th>停滞</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {scores.slice(-21).map((score: Score) => (
+                    <tr key={score.date} className="hover:bg-white/5">
+                      <td>{toDateLabel(score.date)}</td>
+                      <td>{score.rrs !== null ? score.rrs.toFixed(2) : '--'}</td>
+                      <td>{score.mas !== null ? score.mas.toFixed(2) : '--'}</td>
+                      <td>
+                        {score.plateau_flag ? (
+                          <span className="rounded-full bg-danger/10 px-3 py-1 text-xs font-medium text-danger">
+                            検出
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted">---</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           ) : (
-            <div className="rounded-md bg-gray-50 p-6 text-center text-sm text-gray-600">
-              トレンドを計算するには最低4日分のデータが必要です。日次の入力を継続しましょう。
+            <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
+              スコア履歴がまだありません。メトリクスを入力してスコアを生成しましょう。
             </div>
           )}
         </div>
 
-        <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">スコア履歴</h2>
-            {scores && scores.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200 text-sm">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">日付</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">RRS</th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">
-                        MAS
-                      </th>
-                      <th className="px-3 py-2 text-left font-medium text-gray-500 uppercase tracking-wider">
-                        停滞
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {scores.slice(-21).map((score: Score) => (
-                      <tr key={score.date}>
-                        <td className="px-3 py-2 whitespace-nowrap">{toDateLabel(score.date)}</td>
-                        <td className="px-3 py-2">{score.rrs !== null ? score.rrs.toFixed(2) : '--'}</td>
-                        <td className="px-3 py-2">{score.mas !== null ? score.mas.toFixed(2) : '--'}</td>
-                        <td className="px-3 py-2">
-                          {score.plateau_flag ? (
-                            <span className="rounded bg-red-100 px-2 py-1 text-xs font-medium text-red-700">検出</span>
-                          ) : (
-                            <span className="text-xs text-gray-500">---</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="rounded-md bg-gray-50 p-6 text-center text-sm text-gray-600">
-                スコア履歴がまだありません。メトリクスを入力してスコアを生成しましょう。
-              </div>
-            )}
-          </div>
-
-          <div className="bg-white shadow rounded-lg p-6">
-            <h2 className="text-lg font-medium text-gray-900 mb-2">生体指標タイムライン</h2>
-            {metrics && metrics.length > 0 ? (
-              <div className="max-h-96 overflow-y-auto">
-                <ul className="space-y-3">
-                  {metrics
-                    .slice()
-                    .reverse()
-                    .slice(0, 21)
-                    .map((metric) => (
-                      <li key={metric.date} className="border border-gray-100 rounded-lg p-3">
-                        <p className="text-sm font-semibold text-gray-700">{toDateLabel(metric.date)}</p>
-                        <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-gray-600">
-                          <span>体重: {metric.weight_kg ?? '--'} kg</span>
-                          <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
-                          <span>体温: {metric.temp_c ?? '--'} ℃</span>
-                          <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
-                          <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
-                          <span>負荷: {metric.training_load ?? '--'}</span>
-                        </div>
-                      </li>
-                    ))}
-                </ul>
-              </div>
-            ) : (
-              <div className="rounded-md bg-gray-50 p-6 text-center text-sm text-gray-600">
-                日次メトリクスがまだありません。まずは入力を行いましょう。
-              </div>
-            )}
-          </div>
+        <div className="app-card p-8">
+          <h2 className="text-lg font-semibold text-white">生体指標タイムライン</h2>
+          {metrics && metrics.length > 0 ? (
+            <div className="mt-4 max-h-96 space-y-3 overflow-y-auto pr-2">
+              {metrics
+                .slice()
+                .reverse()
+                .slice(0, 21)
+                .map((metric) => (
+                  <div key={metric.date} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
+                    <p className="text-sm font-semibold text-white">{toDateLabel(metric.date)}</p>
+                    <div className="mt-2 grid grid-cols-2 gap-2 text-xs text-muted">
+                      <span>体重: {metric.weight_kg ?? '--'} kg</span>
+                      <span>RHR: {metric.rhr_bpm ?? '--'} bpm</span>
+                      <span>体温: {metric.temp_c ?? '--'} ℃</span>
+                      <span>睡眠: {metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--'} h</span>
+                      <span>疲労: {metric.fatigue_1_5 ?? '--'}</span>
+                      <span>負荷: {metric.training_load ?? '--'}</span>
+                    </div>
+                  </div>
+                ))}
+            </div>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
+              日次メトリクスがまだありません。まずは入力を行いましょう。
+            </div>
+          )}
         </div>
-      </main>
+      </div>
     </div>
   )
 }
