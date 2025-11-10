@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import type { PointerEvent as ReactPointerEvent } from 'react'
 import type { MetricDaily, Score } from '@/types'
 
 const PRESET_RANGES = [
@@ -279,7 +280,7 @@ export function TrendInsights({
   const tooltipLeftPercent =
     hoveredRrsPoint?.x !== undefined ? (hoveredRrsPoint.x / CHART_DIMENSIONS.width) * 100 : 0
 
-  const handlePointerMove = (event: React.PointerEvent<SVGSVGElement>) => {
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
     if (!svgRef.current || !chartAvailable || scoreSeries.length === 0) return
     const rect = svgRef.current.getBoundingClientRect()
     const x = event.clientX - rect.left
@@ -450,6 +451,225 @@ type TimelineMetricSeries = {
   max: number
 }
 
+type TimelineSeriesProps = {
+  series: TimelineMetricSeries
+  executedDateSet: Set<string>
+}
+
+function TimelineSeriesChart({ series, executedDateSet }: TimelineSeriesProps) {
+  const seriesPaddingX = 16
+  const seriesPaddingY = 12
+  const seriesWidth = 520
+  const seriesHeight = 96
+  const usableWidth = seriesWidth - seriesPaddingX * 2
+  const usableHeight = seriesHeight - seriesPaddingY * 2
+  const minValue = series.min
+  const maxValue = series.max
+  const range = maxValue - minValue || 1
+  const step = series.values.length > 1 ? usableWidth / (series.values.length - 1) : 0
+
+  const points = series.values.map((point, index) => {
+    const x = seriesPaddingX + index * step
+    const normalized = (point.value - minValue) / range
+    const y = seriesPaddingY + (1 - normalized) * usableHeight
+    return { ...point, x, y }
+  })
+
+  const svgRef = useRef<SVGSVGElement | null>(null)
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null)
+
+  const handlePointerMove = (event: ReactPointerEvent<SVGSVGElement>) => {
+    if (!svgRef.current || points.length === 0) return
+    const rect = svgRef.current.getBoundingClientRect()
+    const scaleX = seriesWidth / rect.width
+    const svgX = (event.clientX - rect.left) * scaleX
+
+    let nearestIndex = 0
+    let nearestDistance = Number.POSITIVE_INFINITY
+    for (let i = 0; i < points.length; i++) {
+      const distance = Math.abs(points[i].x - svgX)
+      if (distance < nearestDistance) {
+        nearestDistance = distance
+        nearestIndex = i
+      }
+    }
+    setHoverIdx(nearestIndex)
+  }
+
+  const handlePointerLeave = () => {
+    setHoverIdx(null)
+  }
+
+  const latestPoint = points.at(-1) ?? null
+  const latestExecuted = latestPoint ? executedDateSet.has(latestPoint.label) : false
+  const firstValue = points[0]?.value ?? null
+  const lastValue = latestPoint?.value ?? null
+  const change =
+    firstValue !== null && lastValue !== null ? Number((lastValue - firstValue).toFixed(2)) : null
+
+  const hoverPoint = hoverIdx !== null ? points[hoverIdx] : null
+  const hoverExecuted = hoverPoint ? executedDateSet.has(hoverPoint.label) : false
+  const tooltipLabel = series.label.replace(/\s*\(.+\)/, '')
+  const tooltipLeftPercent = hoverPoint ? (hoverPoint.x / seriesWidth) * 100 : 0
+
+  const formatValue = (value: number | null, digits = 2) => {
+    if (value === null) return '--'
+    const rounded = value.toFixed(digits)
+    return series.unit ? `${rounded} ${series.unit}` : rounded
+  }
+
+  return (
+    <div className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold text-white">
+            {series.label}{' '}
+            <span className="text-xs text-muted">
+              ({minValue.toFixed(1)} - {maxValue.toFixed(1)} {series.unit})
+            </span>
+          </p>
+        </div>
+      </div>
+      <div className="relative mt-4">
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${seriesWidth} ${seriesHeight}`}
+          className="h-28 w-full"
+          preserveAspectRatio="none"
+          onPointerMove={handlePointerMove}
+          onPointerLeave={handlePointerLeave}
+        >
+          <defs>
+            <linearGradient id={`timeline-${series.key}`} x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" stopColor={series.color} stopOpacity="0.3" />
+              <stop offset="100%" stopColor={series.color} stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          <rect
+            x={seriesPaddingX}
+            y={seriesPaddingY}
+            width={usableWidth}
+            height={usableHeight}
+            rx={12}
+            className="fill-none stroke-white/10"
+          />
+          {[0.25, 0.5, 0.75].map((fraction) => (
+            <line
+              key={fraction}
+              x1={seriesPaddingX}
+              x2={seriesWidth - seriesPaddingX}
+              y1={seriesPaddingY + fraction * usableHeight}
+              y2={seriesPaddingY + fraction * usableHeight}
+              className="stroke-white/5"
+              strokeWidth={1}
+              strokeDasharray="4 4"
+            />
+          ))}
+
+          <path
+            d={`M ${points.map((point) => `${point.x} ${point.y}`).join(' L ')}`}
+            fill="none"
+            stroke={series.color}
+            strokeWidth={3}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+          <path
+            d={`M ${seriesPaddingX} ${seriesHeight - seriesPaddingY} L ${points
+              .map((point) => `${point.x} ${point.y}`)
+              .join(' L ')} L ${seriesWidth - seriesPaddingX} ${seriesHeight - seriesPaddingY} Z`}
+            fill={`url(#timeline-${series.key})`}
+          />
+
+          {points.map((point, index) => {
+            const executed = executedDateSet.has(point.label)
+            const isHover = hoverIdx === index
+            return (
+              <g key={`${point.label}-${index}`}>
+                {executed && (
+                  <circle
+                    cx={point.x}
+                    cy={point.y}
+                    r={7}
+                    fill="none"
+                    stroke="#FACC15"
+                    strokeWidth={1.4}
+                    strokeDasharray="2 2"
+                  />
+                )}
+                <circle
+                  cx={point.x}
+                  cy={point.y}
+                  r={isHover ? 5 : 4}
+                  fill={executed ? '#FACC15' : series.color}
+                  stroke="#ffffff"
+                  strokeWidth={isHover ? 1.8 : 1.5}
+                />
+              </g>
+            )
+          })}
+
+          {hoverPoint && (
+            <>
+              <line
+                x1={hoverPoint.x}
+                x2={hoverPoint.x}
+                y1={seriesPaddingY}
+                y2={seriesHeight - seriesPaddingY}
+                className="stroke-white/20"
+                strokeWidth={1}
+                strokeDasharray="4 4"
+              />
+              <circle
+                cx={hoverPoint.x}
+                cy={hoverPoint.y}
+                r={5.5}
+                fill={hoverExecuted ? '#FACC15' : series.color}
+                stroke="#ffffff"
+                strokeWidth={2}
+              />
+            </>
+          )}
+        </svg>
+
+        {hoverPoint && (
+          <div
+            className="pointer-events-none absolute -top-16 min-w-[160px] rounded-xl border border-white/15 bg-background/90 px-4 py-3 text-xs shadow-card"
+            style={{
+              left: `clamp(8px, ${tooltipLeftPercent}%, calc(100% - 168px))`,
+            }}
+          >
+            <p className="text-muted">{toDateLabel(hoverPoint.label)}</p>
+            <p className="mt-2 flex items-center justify-between text-white">
+              <span>{tooltipLabel}</span>
+              <span>{formatValue(hoverPoint.value)}</span>
+            </p>
+            {hoverExecuted && (
+              <p className="mt-1 text-[11px] font-medium text-warning">リフィード実施日</p>
+            )}
+          </div>
+        )}
+
+        {!hoverPoint && latestPoint && (
+          <div className="pointer-events-none absolute -top-14 min-w-[160px] rounded-xl border border-white/10 bg-background/70 px-3 py-2 text-[11px] text-muted">
+            <span>{toDateLabel(latestPoint.label)} 時点</span>
+          </div>
+        )}
+      </div>
+      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted">
+        <span>
+          最新: {formatValue(latestPoint?.value)}
+          {latestExecuted && <span className="ml-1 font-semibold text-warning">• リフィード実施</span>}
+        </span>
+        <span>
+          変化: {change !== null ? `${change >= 0 ? '+' : ''}${change.toFixed(2)}` : '--'}{' '}
+          {series.unit}
+        </span>
+      </div>
+    </div>
+  )
+}
+
   const timelineMetrics = useMemo(() => {
     return activeMetrics
       .slice()
@@ -457,52 +677,58 @@ type TimelineMetricSeries = {
       .slice(0, 21)
   }, [activeMetrics])
 
-const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
-  const reversed = timelineMetrics.slice().reverse()
-  if (reversed.length === 0) return []
+  const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
+    const reversed = timelineMetrics.slice().reverse()
+    if (reversed.length === 0) return []
 
-  const buildSeries = (key: keyof MetricDaily, label: string, unit: string, color: string, transform?: (value: number) => number) => {
-    const points: TimelinePoint[] = []
-    reversed.forEach((metric, index) => {
-      const raw = metric[key] as number | null | undefined
-      if (raw !== null && raw !== undefined) {
-        const value = transform ? transform(raw) : raw
-        points.push({
-          x: index,
-          value,
-          label: metric.date,
-        })
+    const buildSeries = (
+      key: keyof MetricDaily,
+      label: string,
+      unit: string,
+      color: string,
+      transform?: (value: number) => number
+    ) => {
+      const points: TimelinePoint[] = []
+      reversed.forEach((metric, index) => {
+        const raw = metric[key] as number | null | undefined
+        if (raw !== null && raw !== undefined) {
+          const value = transform ? transform(raw) : raw
+          points.push({
+            x: index,
+            value,
+            label: metric.date,
+          })
+        }
+      })
+
+      if (!points.length) {
+        return null
       }
-    })
 
-    if (!points.length) {
-      return null
+      const values = points.map((point) => point.value)
+      const min = Math.min(...values)
+      const max = Math.max(...values)
+
+      return {
+        key,
+        label,
+        unit,
+        color,
+        values: points,
+        min,
+        max,
+      }
     }
 
-    const values = points.map((point) => point.value)
-    const min = Math.min(...values)
-    const max = Math.max(...values)
-
-    return {
-      key,
-      label,
-      unit,
-      color,
-      values: points,
-      min,
-      max,
-    }
-  }
-
-  return [
-    buildSeries('weight_kg', '体重', 'kg', '#4C6EF5'),
-    buildSeries('rhr_bpm', 'RHR', 'bpm', '#F97316'),
-    buildSeries('temp_c', '体温', '℃', '#FBBF24'),
-    buildSeries('sleep_min', '睡眠', 'h', '#34D399', (value) => value / 60),
-    buildSeries('fatigue_1_5', '疲労', '', '#F472B6'),
-    buildSeries('training_load', '負荷', '', '#38BDF8'),
-  ].filter((series): series is TimelineMetricSeries => Boolean(series))
-}, [timelineMetrics])
+    return [
+      buildSeries('weight_kg', '体重', 'kg', '#4C6EF5'),
+      buildSeries('rhr_bpm', '安静時心拍数', 'bpm', '#F97316'),
+      buildSeries('temp_c', '体温', '℃', '#FBBF24'),
+      buildSeries('sleep_min', '睡眠', 'h', '#34D399', (value) => value / 60),
+      buildSeries('fatigue_1_5', '疲労', '', '#F472B6'),
+      buildSeries('training_load', '負荷', '', '#38BDF8'),
+    ].filter((series): series is TimelineMetricSeries => Boolean(series))
+  }, [timelineMetrics])
 
   const scoreTableRows = useMemo(() => activeScores.slice().sort((a, b) => (a.date < b.date ? 1 : -1)).slice(0, 21), [activeScores])
 
@@ -953,132 +1179,13 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
             )
           ) : timelineSeries.length > 0 ? (
             <div className="mt-6 space-y-6">
-              {timelineSeries.map((series) => {
-                const seriesPaddingX = 16
-                const seriesPaddingY = 12
-                const seriesWidth = 520
-                const seriesHeight = 96
-                const usableWidth = seriesWidth - seriesPaddingX * 2
-                const usableHeight = seriesHeight - seriesPaddingY * 2
-                const minValue = series.min
-                const maxValue = series.max
-                const range = maxValue - minValue || 1
-                const step = series.values.length > 1 ? usableWidth / (series.values.length - 1) : 0
-
-                const points = series.values.map((point, index) => {
-                  const x = seriesPaddingX + index * step
-                  const normalized = (point.value - minValue) / range
-                  const y = seriesPaddingY + (1 - normalized) * usableHeight
-                  return { ...point, x, y }
-                })
-
-                const latestPoint = points.at(-1)
-                const latestExecuted = latestPoint ? executedDateSet.has(latestPoint.label) : false
-
-                return (
-                  <div key={series.key} className="rounded-2xl border border-white/5 bg-surface-soft/70 p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-semibold text-white">
-                          {series.label}{' '}
-                          <span className="text-xs text-muted">
-                            ({minValue.toFixed(1)} - {maxValue.toFixed(1)} {series.unit})
-                          </span>
-                        </p>
-                      </div>
-                    </div>
-                    <div className="relative mt-4">
-                      <svg viewBox={`0 0 ${seriesWidth} ${seriesHeight}`} className="h-28 w-full" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id={`timeline-${series.key}`} x1="0%" y1="0%" x2="0%" y2="100%">
-                            <stop offset="0%" stopColor={series.color} stopOpacity="0.3" />
-                            <stop offset="100%" stopColor={series.color} stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <rect
-                          x={seriesPaddingX}
-                          y={seriesPaddingY}
-                          width={usableWidth}
-                          height={usableHeight}
-                          rx={12}
-                          className="fill-none stroke-white/10"
-                        />
-                        {[0.25, 0.5, 0.75].map((fraction) => (
-                          <line
-                            key={fraction}
-                            x1={seriesPaddingX}
-                            x2={seriesWidth - seriesPaddingX}
-                            y1={seriesPaddingY + fraction * usableHeight}
-                            y2={seriesPaddingY + fraction * usableHeight}
-                            className="stroke-white/5"
-                            strokeWidth={1}
-                            strokeDasharray="4 4"
-                          />
-                        ))}
-
-                        <path
-                          d={`M ${points.map((point) => `${point.x} ${point.y}`).join(' L ')}`}
-                          fill="none"
-                          stroke={series.color}
-                          strokeWidth={3}
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                        <path
-                          d={`M ${seriesPaddingX} ${seriesHeight - seriesPaddingY} L ${points
-                            .map((point) => `${point.x} ${point.y}`)
-                            .join(' L ')} L ${seriesWidth - seriesPaddingX} ${seriesHeight - seriesPaddingY} Z`}
-                          fill={`url(#timeline-${series.key})`}
-                        />
-                        {points.map((point) => {
-                          const executed = executedDateSet.has(point.label)
-                          return (
-                            <g key={point.label}>
-                              {executed && (
-                                <circle
-                                  cx={point.x}
-                                  cy={point.y}
-                                  r={7}
-                                  fill="none"
-                                  stroke="#FACC15"
-                                  strokeWidth={1.4}
-                                  strokeDasharray="2 2"
-                                />
-                              )}
-                              <circle
-                                cx={point.x}
-                                cy={point.y}
-                                r={4}
-                                fill={executed ? '#FACC15' : series.color}
-                                stroke="#ffffff"
-                                strokeWidth={1.5}
-                              >
-                                <title>
-                                  {`${toDateLabel(point.label)}: ${point.value.toFixed(2)} ${series.unit}${
-                                    executed ? '（リフィード実施）' : ''
-                                  }`}
-                                </title>
-                              </circle>
-                            </g>
-                          )
-                        })}
-                      </svg>
-                      <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted">
-                        <span>
-                          最新: {latestPoint?.value.toFixed(2)} {series.unit}
-                          {latestExecuted && <span className="ml-1 font-semibold text-warning">• リフィード実施</span>}
-                        </span>
-                        <span>
-                          変化:{' '}
-                          {(points.at(-1)?.value ?? 0 - (points[0]?.value ?? 0) >= 0 ? '+' : '') +
-                            ((points.at(-1)?.value ?? 0) - (points[0]?.value ?? 0)).toFixed(2)}{' '}
-                          {series.unit}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+              {timelineSeries.map((series) => (
+                <TimelineSeriesChart
+                  key={String(series.key)}
+                  series={series}
+                  executedDateSet={executedDateSet}
+                />
+              ))}
             </div>
           ) : (
             <div className="mt-6 rounded-2xl border border-white/10 bg-surface-soft/70 p-8 text-center text-sm text-muted">
