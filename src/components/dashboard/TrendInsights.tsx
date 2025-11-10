@@ -650,11 +650,6 @@ function TimelineSeriesChart({ series, executedDateSet }: TimelineSeriesProps) {
           </div>
         )}
 
-        {!hoverPoint && latestPoint && (
-          <div className="pointer-events-none absolute -top-14 min-w-[160px] rounded-xl border border-white/10 bg-background/70 px-3 py-2 text-[11px] text-muted">
-            <span>{toDateLabel(latestPoint.label)} 時点</span>
-          </div>
-        )}
       </div>
       <div className="mt-2 grid grid-cols-2 gap-2 text-[10px] text-muted">
         <span>
