@@ -78,16 +78,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/90 p-10 shadow-2xl">
-        <div className="mb-8 text-center text-white">
-          <h1 className="text-2xl font-semibold">代謝計算ツール</h1>
-          <p className="mt-2 text-sm text-gray-300">アカウントにログインしてください</p>
-        </div>
+    <main className="mx-auto flex min-h-[calc(100vh-160px)] w-full max-w-3xl flex-col justify-center px-6 pb-24 pt-10">
+      <section className="app-card p-10">
+        <header className="mb-8 space-y-2 text-white">
+          <h1 className="text-2xl font-semibold">アカウントにサインイン</h1>
+          <p className="text-sm text-muted">登録済みのメールアドレスとパスワードを入力してログインしてください。</p>
+        </header>
+
         <form className="space-y-6" onSubmit={handleLogin}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-200">
+              <label htmlFor="email" className="app-label">
                 メールアドレス
               </label>
               <input
@@ -96,14 +97,14 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                placeholder="example@email.com"
+                className="app-input"
+                placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-200">
+              <label htmlFor="password" className="app-label">
                 パスワード
               </label>
               <input
@@ -112,7 +113,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                className="app-input"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -126,29 +127,25 @@ export default function LoginPage() {
             </p>
           )}
 
-          <div className="text-right text-xs">
-            <Link href="/auth/reset-password" className="text-blue-300 hover:text-blue-200">
+          <div className="flex items-center justify-between text-xs text-muted">
+            <Link href="/auth/reset-password" className="font-medium text-accent hover:text-accent/80">
               パスワードをお忘れですか？
+            </Link>
+            <Link href="/auth/register" className="font-medium text-gray-200 hover:text-white">
+              新規登録はこちら
             </Link>
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-blue-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-button-primary w-full justify-center py-3 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? 'ログイン処理中...' : 'ログイン'}
           </button>
         </form>
-
-        <p className="mt-8 text-center text-sm text-gray-300">
-          アカウントをお持ちでない方は{' '}
-          <Link href="/auth/register" className="font-semibold text-blue-400 hover:text-blue-300">
-            新規登録
-          </Link>
-        </p>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 

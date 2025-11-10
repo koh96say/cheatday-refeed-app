@@ -91,16 +91,19 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/90 p-10 shadow-2xl">
-        <div className="mb-8 text-center text-white">
-          <h1 className="text-2xl font-semibold">代謝計算ツール</h1>
-          <p className="mt-2 text-sm text-gray-300">新規アカウントを作成しましょう</p>
-        </div>
+    <main className="mx-auto flex min-h-[calc(100vh-160px)] w-full max-w-3xl flex-col justify-center px-6 pb-24 pt-10">
+      <section className="app-card p-10">
+        <header className="mb-8 space-y-2 text-white">
+          <h1 className="text-2xl font-semibold">新規アカウントの作成</h1>
+          <p className="text-sm text-muted">
+            必要事項を入力して、チートデイ発見アプリの全機能をご利用ください。
+          </p>
+        </header>
+
         <form className="space-y-6" onSubmit={handleRegister}>
           <div className="space-y-4">
             <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-200">
+              <label htmlFor="email" className="app-label">
                 メールアドレス
               </label>
               <input
@@ -109,14 +112,14 @@ export default function RegisterPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-                placeholder="example@email.com"
+                className="app-input"
+                placeholder="user@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-200">
+              <label htmlFor="password" className="app-label">
                 パスワード
               </label>
               <input
@@ -126,14 +129,14 @@ export default function RegisterPage() {
                 autoComplete="new-password"
                 required
                 minLength={6}
-                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                className="app-input"
                 placeholder="8文字以上の安全なパスワード"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-200">
+              <label htmlFor="confirmPassword" className="app-label">
                 パスワード（確認用）
               </label>
               <input
@@ -142,7 +145,7 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
+                className="app-input"
                 placeholder="パスワードを再入力"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
@@ -159,20 +162,20 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-blue-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-button-primary w-full justify-center py-3 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? '登録処理中...' : 'アカウントを作成'}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-gray-300">
-          すでにアカウントをお持ちの方は{' '}
-          <Link href="/auth/login" className="font-semibold text-blue-400 hover:text-blue-300">
-            ログイン
+        <p className="mt-8 text-center text-sm text-muted">
+          すでにアカウントをお持ちですか？{' '}
+          <Link href="/auth/login" className="font-semibold text-gray-200 hover:text-white">
+            ログインはこちら
           </Link>
         </p>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 

@@ -44,17 +44,18 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-blue-600 to-blue-700 px-4">
-      <div className="w-full max-w-md rounded-3xl border border-white/10 bg-black/90 p-10 shadow-2xl">
-        <div className="mb-8 text-center text-white">
+    <main className="mx-auto flex min-h-[calc(100vh-160px)] w-full max-w-3xl flex-col justify-center px-6 pb-24 pt-10">
+      <section className="app-card p-10">
+        <header className="mb-8 space-y-2 text-white">
           <h1 className="text-2xl font-semibold">パスワード再設定</h1>
-          <p className="mt-2 text-sm text-gray-300">
-            登録済みメールアドレスを入力すると、パスワード再設定用のリンクを送信します。
+          <p className="text-sm text-muted">
+            登録済みのメールアドレスを入力すると、再設定用リンクをお送りします。
           </p>
-        </div>
+        </header>
+
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-gray-200">
+            <label htmlFor="email" className="app-label">
               メールアドレス
             </label>
             <input
@@ -63,8 +64,8 @@ export default function ResetPasswordPage() {
               type="email"
               autoComplete="email"
               required
-              className="w-full rounded-lg border border-white/10 bg-white/10 px-4 py-3 text-white placeholder-gray-400 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-400/50"
-              placeholder="example@email.com"
+              className="app-input"
+              placeholder="user@example.com"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
             />
@@ -77,20 +78,20 @@ export default function ResetPasswordPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-lg bg-gradient-to-r from-blue-500 to-blue-600 py-3 text-sm font-semibold text-white shadow-lg transition hover:from-blue-500 hover:to-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+            className="app-button-primary w-full justify-center py-3 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {loading ? '送信中...' : '再設定メールを送信'}
           </button>
         </form>
 
-        <p className="mt-8 text-center text-sm text-gray-300">
-          ログイン画面に戻る方は{' '}
-          <Link href="/auth/login" className="font-semibold text-blue-400 hover:text-blue-300">
+        <p className="mt-8 text-center text-sm text-muted">
+          ログインページへ戻る場合は{' '}
+          <Link href="/auth/login" className="font-semibold text-gray-200 hover:text-white">
             こちら
           </Link>
         </p>
-      </div>
-    </div>
+      </section>
+    </main>
   )
 }
 
