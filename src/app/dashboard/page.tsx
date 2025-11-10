@@ -192,8 +192,8 @@ export default async function DashboardPage() {
         </Link>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <div className="app-card relative overflow-hidden p-8 lg:col-span-2">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="app-card relative overflow-hidden p-8">
           <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${rrsVisual.gradient} opacity-80`} />
           <div className="relative flex flex-col gap-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
