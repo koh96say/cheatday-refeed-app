@@ -325,12 +325,34 @@ export function TrendInsights({
     const reversedMetrics = recentMetrics.slice().reverse()
 
     const cardDefinitions = [
-      { key: 'weight_kg' as const, label: '体重 (kg)', unit: 'kg', precision: 1, accent: '#4C6EF5' },
-      { key: 'rhr_bpm' as const, label: '安静時心拍数 (bpm)', unit: 'bpm', precision: 0, accent: '#F97316' },
-      { key: 'temp_c' as const, label: '体温 (℃)', unit: '℃', precision: 2, accent: '#FBBF24' },
+      {
+        key: 'weight_kg' as const,
+        label: '体重 (kg)',
+        tooltipLabel: '体重',
+        unit: 'kg',
+        precision: 1,
+        accent: '#4C6EF5',
+      },
+      {
+        key: 'rhr_bpm' as const,
+        label: '安静時心拍数 (bpm)',
+        tooltipLabel: '安静時心拍数',
+        unit: 'bpm',
+        precision: 0,
+        accent: '#F97316',
+      },
+      {
+        key: 'temp_c' as const,
+        label: '体温 (℃)',
+        tooltipLabel: '体温',
+        unit: '℃',
+        precision: 2,
+        accent: '#FBBF24',
+      },
       {
         key: 'sleep_min' as const,
         label: '睡眠 (h)',
+        tooltipLabel: '睡眠',
         unit: 'h',
         precision: 2,
         accent: '#34D399',
@@ -339,7 +361,14 @@ export function TrendInsights({
           return value / 60
         },
       },
-      { key: 'fatigue_1_5' as const, label: '疲労 (1-5)', unit: '', precision: 1, accent: '#F472B6' },
+      {
+        key: 'fatigue_1_5' as const,
+        label: '疲労 (1-5)',
+        tooltipLabel: '疲労',
+        unit: '',
+        precision: 1,
+        accent: '#F472B6',
+      },
     ]
 
     return cardDefinitions.map((card) => {
@@ -400,6 +429,7 @@ export function TrendInsights({
         seriesValues,
         seriesDates,
         executedFlags,
+        tooltipLabel: card.tooltipLabel ?? card.label.replace(/\s*\(.+\)/, ''),
       }
     })
   }, [activeMetrics, executedDateSet])
@@ -785,7 +815,7 @@ const timelineSeries: TimelineMetricSeries[] = useMemo(() => {
                         >
                           <p className="text-muted">{toDateLabel(hoverDate)}</p>
                           <p className="mt-2 flex items-center justify-between text-white">
-                            <span>値</span>
+                            <span>{card.tooltipLabel}</span>
                             <span>
                               {hoverValue.toFixed(card.precision)} {card.unit}
                             </span>
