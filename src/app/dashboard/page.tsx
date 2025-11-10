@@ -2,6 +2,7 @@ import { createSupabaseServerComponentClient } from '@/lib/supabase/server'
 import { ensureUserRecords } from '@/lib/auth/ensureUser'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import { DeleteMetricButton } from '@/components/dashboard/DeleteMetricButton'
 
 export default async function DashboardPage() {
   const supabase = await createSupabaseServerComponentClient()
@@ -319,6 +320,7 @@ export default async function DashboardPage() {
             <table className="app-table">
               <thead>
                 <tr>
+                  <th className="w-14 text-center">削除</th>
                   <th>日付</th>
                   <th>体重 (kg)</th>
                   <th>RHR (bpm)</th>
@@ -329,31 +331,38 @@ export default async function DashboardPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {sortedRecentMetrics.length > 0 ? (
-                  sortedRecentMetrics.map((metric) => (
-                    <tr key={metric.date} className="hover:bg-white/5 transition">
-                      {[
-                        formatDate(metric.date),
-                        metric.weight_kg ?? '--',
-                        metric.rhr_bpm ?? '--',
-                        metric.temp_c ?? '--',
-                        metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--',
-                        metric.fatigue_1_5 ?? '--',
-                      ].map((value, idx) => (
-                        <td key={idx} className="p-0">
-                          <Link
-                            href={`/dashboard/metrics?date=${metric.date}`}
-                            className="block px-3 py-2"
-                            aria-label={`${formatDate(metric.date)} のメトリクスを編集`}
-                          >
-                            {value}
-                          </Link>
+                  sortedRecentMetrics.map((metric) => {
+                    const cells = [
+                      formatDate(metric.date),
+                      metric.weight_kg ?? '--',
+                      metric.rhr_bpm ?? '--',
+                      metric.temp_c ?? '--',
+                      metric.sleep_min ? (metric.sleep_min / 60).toFixed(1) : '--',
+                      metric.fatigue_1_5 ?? '--',
+                    ]
+
+                    return (
+                      <tr key={metric.date} className="hover:bg-white/5 transition">
+                        <td className="px-3 py-2 text-center align-middle">
+                          <DeleteMetricButton date={metric.date} />
                         </td>
-                      ))}
-                    </tr>
-                  ))
+                        {cells.map((value, idx) => (
+                          <td key={idx} className="p-0">
+                            <Link
+                              href={`/dashboard/metrics?date=${metric.date}`}
+                              className="block px-3 py-2"
+                              aria-label={`${formatDate(metric.date)} のメトリクスを編集`}
+                            >
+                              {value}
+                            </Link>
+                          </td>
+                        ))}
+                      </tr>
+                    )
+                  })
                 ) : (
                   <tr>
-                    <td colSpan={6} className="py-8 text-center text-sm text-muted">
+                    <td colSpan={7} className="py-8 text-center text-sm text-muted">
                       直近7日間のデータがありません。メトリクスを入力してください。
                     </td>
                   </tr>
